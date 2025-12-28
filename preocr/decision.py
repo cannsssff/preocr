@@ -138,18 +138,36 @@ def decide(signals: Dict[str, any]) -> Tuple[bool, str, float, str, str]:
         
         # Fallback to text-length based decision (when layout analysis not available)
         if text_length >= MIN_TEXT_LENGTH:
+            # Calculate confidence based on text length (more text = higher confidence)
+            # Scale from 0.85 to 0.95 based on text length
+            file_size = signals.get("file_size", 1)
+            text_ratio = min(text_length / max(file_size / 10, MIN_TEXT_LENGTH), 1.0)
+            confidence = 0.85 + (text_ratio * 0.1)  # Range: 0.85 to 0.95
+            confidence = min(confidence, HIGH_CONFIDENCE)
+            
             return (
                 False,
                 f"{get_reason_description(ReasonCode.PDF_DIGITAL)} ({text_length} chars)",
-                HIGH_CONFIDENCE,
+                round(confidence, 2),
                 CATEGORY_STRUCTURED,
                 ReasonCode.PDF_DIGITAL,
             )
         else:
+            # Calculate confidence based on how close text_length is to threshold
+            # Formula: confidence = 0.60 + (proximity_to_threshold * 0.15)
+            # - 0 chars: 0.60 (lowest - might be image-only)
+            # - Close to threshold (49 chars): 0.75 (highest - definitely scanned text)
+            # Linear interpolation between 0 and MIN_TEXT_LENGTH
+            if MIN_TEXT_LENGTH > 0:
+                proximity_factor = min(text_length / MIN_TEXT_LENGTH, 1.0)
+                confidence = 0.60 + (proximity_factor * 0.15)  # Range: 0.60 to 0.75
+            else:
+                confidence = 0.65  # Fallback
+            
             return (
                 True,
                 f"{get_reason_description(ReasonCode.PDF_SCANNED)} ({text_length} chars)",
-                MEDIUM_CONFIDENCE,
+                round(confidence, 2),
                 CATEGORY_UNSTRUCTURED,
                 ReasonCode.PDF_SCANNED,
             )
@@ -244,20 +262,30 @@ def refine_with_opencv(
     # Case 1: Text-only layout
     if layout_type == "text_only":
         if text_length >= MIN_TEXT_LENGTH and text_coverage_opencv > 15:
-            # Digital text document
+            # Digital text document - calculate confidence based on text length and coverage
+            text_factor = min(text_length / (MIN_TEXT_LENGTH * 10), 1.0)  # Normalize
+            coverage_factor = min(text_coverage_opencv / 50.0, 1.0)  # Normalize
+            confidence = 0.88 + ((text_factor + coverage_factor) / 2 * 0.07)  # Range: 0.88 to 0.95
+            confidence = min(confidence, HIGH_CONFIDENCE)
+            
             return (
                 False,
                 f"{get_reason_description(ReasonCode.PDF_DIGITAL)} (OpenCV detected text-only layout, {text_length} chars, {text_coverage_opencv:.1f}% coverage)",
-                min(initial_confidence + 0.15, HIGH_CONFIDENCE),
+                round(confidence, 2),
                 CATEGORY_STRUCTURED,
                 ReasonCode.PDF_DIGITAL,
             )
         elif text_length < MIN_TEXT_LENGTH and text_coverage_opencv > 10:
             # Text regions detected but no extractable text = likely scanned text
+            # Calculate confidence based on text coverage (more coverage = higher confidence)
+            coverage_factor = min(text_coverage_opencv / 30.0, 1.0)  # Normalize to 0-1
+            confidence = 0.75 + (coverage_factor * 0.15)  # Range: 0.75 to 0.90
+            confidence = min(confidence, HIGH_CONFIDENCE)
+            
             return (
                 True,
                 f"{get_reason_description(ReasonCode.PDF_SCANNED)} (OpenCV detected text-only layout but no extractable text, {text_coverage_opencv:.1f}% coverage)",
-                min(initial_confidence + 0.15, HIGH_CONFIDENCE),
+                round(confidence, 2),
                 CATEGORY_UNSTRUCTURED,
                 ReasonCode.PDF_SCANNED,
             )
@@ -276,19 +304,33 @@ def refine_with_opencv(
     elif layout_type == "mixed":
         if text_coverage_opencv > 15 and text_length >= MIN_TEXT_LENGTH:
             # Text is significant, might not need full OCR
+            # Calculate confidence based on text vs image ratio
+            total_coverage = text_coverage_opencv + image_coverage_opencv
+            if total_coverage > 0:
+                text_ratio = text_coverage_opencv / total_coverage
+                confidence = 0.80 + (text_ratio * 0.10)  # Range: 0.80 to 0.90
+            else:
+                confidence = 0.80
+            confidence = min(confidence, HIGH_CONFIDENCE)
+            
             return (
                 False,
                 f"{get_reason_description(ReasonCode.PDF_DIGITAL)} (OpenCV detected mixed content, text sufficient, {text_length} chars, {text_coverage_opencv:.1f}% text, {image_coverage_opencv:.1f}% images)",
-                min(initial_confidence + 0.1, MEDIUM_CONFIDENCE + 0.1),
+                round(confidence, 2),
                 CATEGORY_STRUCTURED,
                 ReasonCode.PDF_DIGITAL,
             )
         else:
             # Mixed but text is sparse, needs OCR
+            # Calculate confidence based on image coverage (more images = higher confidence needs OCR)
+            image_factor = min(image_coverage_opencv / 50.0, 1.0)
+            confidence = 0.75 + (image_factor * 0.10)  # Range: 0.75 to 0.85
+            confidence = min(confidence, HIGH_CONFIDENCE)
+            
             return (
                 True,
                 f"{get_reason_description(ReasonCode.PDF_MIXED)} (OpenCV detected mixed content, {text_coverage_opencv:.1f}% text, {image_coverage_opencv:.1f}% images)",
-                min(initial_confidence + 0.15, MEDIUM_CONFIDENCE + 0.1),
+                round(confidence, 2),
                 CATEGORY_UNSTRUCTURED,
                 ReasonCode.PDF_MIXED,
             )

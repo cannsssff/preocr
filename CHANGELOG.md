@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2024-12-30
+
+### Added
+- **Dynamic Confidence Scoring**: Implemented formula-based confidence scores for PDFs (digital and scanned) and OpenCV refinement, providing more granular and accurate confidence levels based on text length, coverage, and ratios.
+
+### Changed
+- `preocr/decision.py`: Updated confidence calculation logic to use dynamic formulas instead of fixed thresholds for various PDF scenarios, improving accuracy and granularity of confidence scores.
+
 ## [0.3.1] - 2024-12-29
 
 ### Changed

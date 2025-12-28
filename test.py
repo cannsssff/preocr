@@ -1,51 +1,39 @@
+from pathlib import Path
 from preocr import needs_ocr
-import json
 
-# Test with layout_aware=True for better accuracy
-result = needs_ocr("/home/yuvarajk/Downloads/ORTHO case 1.pdf", layout_aware=True)
+files = list(Path("/home/yuvarajk/Downloads").glob("*.pdf"))
+needs_ocr_count = 0
+skipped_count = 0
 
 print("="*60)
-print("OCR Detection Result")
+print(f"Testing {len(files)} PDF files...")
 print("="*60)
-print(f"Needs OCR: {result['needs_ocr']}")
-print(f"Confidence: {result['confidence']}")
-print(f"Reason: {result['reason']}")
-print(f"Reason Code: {result['reason_code']}")
 print()
 
-if "layout" in result:
-    print("Layout Analysis:")
-    layout = result["layout"]
+for file_path in files:
+    result = needs_ocr(file_path, layout_aware=True)
     
-    # Basic layout (pdfplumber-based)
-    print("  Basic Layout (pdfplumber-based):")
-    print(f"    Text Coverage: {layout.get('text_coverage', 0)}%")
-    print(f"    Image Coverage: {layout.get('image_coverage', 0)}%")
-    print(f"    Layout Type: {layout.get('layout_type', 'unknown')}")
-    print(f"    Has Images: {layout.get('has_images', False)}")
-    if layout.get('text_density', 0) > 0:
-        print(f"    Text Density: {layout.get('text_density', 0)}")
-    if layout.get('is_mixed_content', False):
-        print(f"    Mixed Content: {layout.get('is_mixed_content', False)}")
+    status = "🔴 NEEDS OCR" if result["needs_ocr"] else "✅ SKIP OCR"
+    print(f"{status} | {file_path.name}")
+    print(f"  Confidence: {result['confidence']:.2f}")
+    print(f"  Reason: {result['reason']}")
+    print(f"  Reason Code: {result['reason_code']}")
     
-    # OpenCV layout (if available)
-    if "opencv" in layout:
-        print("\n  OpenCV Analysis (advanced):")
-        ocv = layout["opencv"]
-        print(f"    Text Coverage: {ocv.get('text_coverage', 0)}%")
-        print(f"    Image Coverage: {ocv.get('image_coverage', 0)}%")
-        print(f"    Text Regions: {ocv.get('text_regions', 0)}")
-        print(f"    Image Regions: {ocv.get('image_regions', 0)}")
-        print(f"    Layout Type: {ocv.get('layout_type', 'unknown')}")
-        print(f"    Complexity: {ocv.get('layout_complexity', 'unknown')}")
-        if ocv.get('total_pages', 0) > 0:
-            print(f"    Total Pages: {ocv.get('total_pages', 0)}")
-            print(f"    Pages Analyzed: {ocv.get('pages_analyzed', 0)}")
+    # Show layout analysis if available
+    if "layout" in result and "opencv" in result["layout"]:
+        ocv = result["layout"]["opencv"]
+        print(f"  OpenCV: {ocv.get('text_coverage', 0):.1f}% text, "
+              f"{ocv.get('text_regions', 0)} regions, "
+              f"{ocv.get('layout_type', 'unknown')} layout")
+    
+    print()
+    
+    if result["needs_ocr"]:
+        needs_ocr_count += 1
     else:
-        print("\n  ⚠️  OpenCV layout analysis not available.")
-        print("     Install with: pip install preocr[layout-refinement]")
+        skipped_count += 1
 
-print("\n" + "="*60)
-print("Full Result (JSON):")
 print("="*60)
-print(json.dumps(result, indent=2, default=str))
+print(f"Summary: OCR needed: {needs_ocr_count}, Skipped: {skipped_count}")
+print(f"Total files: {len(files)}")
+print("="*60)
