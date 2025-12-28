@@ -116,24 +116,49 @@ jobs:
           pip install -e ".[dev]"
           pytest
       
+      - name: Verify version before build
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          CODE_VERSION=$(python -c "import sys; sys.path.insert(0, '.'); from preocr.version import __version__; print(__version__)")
+          echo "Tag version: $TAG_VERSION"
+          echo "Code version: $CODE_VERSION"
+          if [ "$TAG_VERSION" != "$CODE_VERSION" ]; then
+            echo "ERROR: Code version ($CODE_VERSION) doesn't match tag ($TAG_VERSION)"
+            exit 1
+          fi
+          echo "✓ Version check passed: $CODE_VERSION"
+      
       - name: Build package
         run: |
           rm -rf dist/ build/ *.egg-info || true
           python -m build
+          echo "Built packages:"
+          ls -lh dist/
       
       - name: Check package
         run: |
           twine check dist/*
       
-      - name: Verify package version matches tag
+      - name: Verify built package version
         run: |
           TAG_VERSION=${GITHUB_REF#refs/tags/v}
-          PACKAGE_VERSION=$(python -c "import sys; sys.path.insert(0, '.'); from preocr.version import __version__; print(__version__)")
-          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
-            echo "ERROR: Package version ($PACKAGE_VERSION) doesn't match tag ($TAG_VERSION)"
+          # Extract version from built wheel filename
+          WHEEL_FILE=$(ls dist/*.whl 2>/dev/null | head -1)
+          if [ -z "$WHEEL_FILE" ]; then
+            echo "ERROR: No wheel file found in dist/"
             exit 1
           fi
-          echo "✓ Package version matches tag: $PACKAGE_VERSION"
+          echo "Wheel file: $WHEEL_FILE"
+          # Extract version from filename: preocr-X.Y.Z-py3-none-any.whl
+          WHEEL_VERSION=$(echo "$WHEEL_FILE" | sed -n 's/.*preocr-\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')
+          echo "Wheel version: $WHEEL_VERSION"
+          echo "Tag version: $TAG_VERSION"
+          if [ "$WHEEL_VERSION" != "$TAG_VERSION" ]; then
+            echo "ERROR: Built package version ($WHEEL_VERSION) doesn't match tag ($TAG_VERSION)"
+            echo "This should not happen - the build is using wrong version!"
+            exit 1
+          fi
+          echo "✓ Built package version matches tag: $WHEEL_VERSION"
       
       - name: Publish to PyPI
         env:
