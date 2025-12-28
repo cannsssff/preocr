@@ -107,6 +107,13 @@ PreOCR uses a **hybrid adaptive pipeline**:
 pip install preocr
 ```
 
+**System Requirements:**
+- **libmagic**: Required for file type detection. Install system package:
+  - **Linux (Debian/Ubuntu)**: `sudo apt-get install libmagic1`
+  - **Linux (RHEL/CentOS)**: `sudo yum install file-devel` or `sudo dnf install file-devel`
+  - **macOS**: `brew install libmagic`
+  - **Windows**: Usually included with `python-magic-bin` package
+
 ### With OpenCV Refinement (Recommended)
 
 For improved accuracy on edge cases:
@@ -115,7 +122,7 @@ For improved accuracy on edge cases:
 pip install preocr[layout-refinement]
 ```
 
-This installs OpenCV and NumPy for layout analysis. The pipeline automatically uses OpenCV when confidence is low, even if installed separately.
+This installs `opencv-python-headless` and NumPy for layout analysis. The pipeline automatically uses OpenCV when confidence is low, even if installed separately.
 
 ## 💻 Usage Examples
 
