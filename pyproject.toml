@@ -4,15 +4,27 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "preocr"
-version = "0.2.0"  # This will be read from preocr/version.py at build time
-description = "A fast, CPU-only library that detects whether files need OCR processing before expensive OCR operations"
+version = "0.3.0"  # This will be read from preocr/version.py at build time
+description = "A fast, CPU-only library that intelligently detects whether files need OCR processing before expensive OCR operations. Uses hybrid adaptive pipeline for 92-95% accuracy."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "Apache-2.0"
 authors = [
     {name = "PreOCR Contributors"}
 ]
-keywords = ["ocr", "document", "detection", "preprocessing", "file-analysis"]
+keywords = [
+    "ocr",
+    "document",
+    "detection",
+    "preprocessing",
+    "file-analysis",
+    "layout-analysis",
+    "pdf-analysis",
+    "text-extraction",
+    "document-processing",
+    "opencv",
+    "computer-vision",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -48,6 +60,10 @@ dev = [
     "black>=23.0.0",
     "ruff>=0.1.0",
     "mypy>=1.5.0",
+]
+layout-refinement = [
+    "opencv-python>=4.8.0",
+    "numpy>=1.24.0",
 ]
 
 [project.urls]

@@ -15,6 +15,10 @@ HIGH_CONFIDENCE = 0.9
 MEDIUM_CONFIDENCE = 0.7
 LOW_CONFIDENCE = 0.5
 
+# Confidence threshold for triggering OpenCV layout analysis
+# If initial confidence is below this, use OpenCV for refinement
+LAYOUT_REFINEMENT_THRESHOLD = 0.9
+
 # Reason codes for structured decision tracking
 class ReasonCode:
     """Structured reason codes for OCR detection decisions."""

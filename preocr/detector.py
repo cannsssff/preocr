@@ -6,16 +6,20 @@ from typing import Any, Dict, Optional, Union
 from . import decision
 from . import filetype
 from . import image_probe
+from . import layout_analyzer
 from . import office_probe
+from . import opencv_layout
 from . import page_detection
 from . import pdf_probe
 from . import signals
 from . import text_probe
+from .constants import LAYOUT_REFINEMENT_THRESHOLD
 
 
 def needs_ocr(
     file_path: Union[str, Path],
     page_level: bool = False,
+    layout_aware: bool = False,
 ) -> Dict[str, Any]:
     """
     Determine if a file needs OCR processing.
@@ -26,6 +30,8 @@ def needs_ocr(
     Args:
         file_path: Path to the file to analyze (string or Path object)
         page_level: If True, return page-level analysis for PDFs (default: False)
+        layout_aware: If True, perform layout analysis for PDFs to detect mixed
+                     content and improve accuracy (default: False)
         
     Returns:
         Dictionary with keys:
@@ -37,6 +43,7 @@ def needs_ocr(
             - reason_code: Structured reason code (e.g., "PDF_DIGITAL", "IMAGE_FILE")
             - signals: Dictionary of all collected signals (for debugging)
             - pages: (if page_level=True for PDFs) Page-level analysis results
+            - layout: (if layout_aware=True for PDFs) Layout analysis results
             
     Example:
         >>> result = needs_ocr("document.pdf")
@@ -62,10 +69,17 @@ def needs_ocr(
     text_result = None
     image_result = None
     page_analysis = None
+    layout_result = None
     
     if mime == "application/pdf":
         # PDF text extraction (with optional page-level analysis)
         text_result = pdf_probe.extract_pdf_text(str(path), page_level=page_level)
+        
+        # Perform layout analysis if requested
+        if layout_aware:
+            layout_result = layout_analyzer.analyze_pdf_layout(
+                str(path), page_level=page_level
+            )
         
         # Perform page-level analysis if requested
         if page_level and "pages" in text_result:
@@ -84,13 +98,25 @@ def needs_ocr(
     
     # Step 3: Collect all signals
     collected_signals = signals.collect_signals(
-        str(path), file_info, text_result, image_result
+        str(path), file_info, text_result, image_result, layout_result
     )
     
-    # Step 4: Make decision
+    # Step 4: Make initial decision (heuristics)
     needs_ocr_flag, reason, confidence, category, reason_code = decision.decide(collected_signals)
     
-    # Step 5: Determine file type category for user
+    # Step 5: Confidence check → OpenCV layout refinement (if needed)
+    # If confidence is low, use OpenCV to refine the decision
+    if mime == "application/pdf" and confidence < LAYOUT_REFINEMENT_THRESHOLD:
+        opencv_result = opencv_layout.analyze_with_opencv(str(path), page_num=0)
+        if opencv_result:
+            # Refine decision based on OpenCV analysis
+            needs_ocr_flag, reason, confidence, category, reason_code = decision.refine_with_opencv(
+                collected_signals, opencv_result, needs_ocr_flag, reason, confidence, category, reason_code
+            )
+            # Add OpenCV results to signals for debugging
+            collected_signals["opencv_layout"] = opencv_result
+    
+    # Step 6: Determine file type category for user
     file_type_category = _get_file_type_category(mime, file_info["extension"])
     
     # Build result dictionary
@@ -116,6 +142,19 @@ def needs_ocr(
             result["confidence"] = page_analysis["overall_confidence"]
             result["reason_code"] = page_analysis["overall_reason_code"]
             result["reason"] = page_analysis["overall_reason"]
+    
+    # Add layout analysis results if available
+    if layout_result:
+        result["layout"] = {
+            "text_coverage": layout_result.get("text_coverage", 0.0),
+            "image_coverage": layout_result.get("image_coverage", 0.0),
+            "has_images": layout_result.get("has_images", False),
+            "text_density": layout_result.get("text_density", 0.0),
+            "layout_type": layout_result.get("layout_type", "unknown"),
+            "is_mixed_content": layout_result.get("is_mixed_content", False),
+        }
+        if page_level and "pages" in layout_result:
+            result["layout"]["pages"] = layout_result["pages"]
     
     return result
 
