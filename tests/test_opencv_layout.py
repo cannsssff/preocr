@@ -100,7 +100,10 @@ def test_contours_overlap():
 
 def test_analyze_layout_structure():
     """Test layout analysis structure."""
-    import numpy as np
+    try:
+        import numpy as np
+    except ImportError:
+        pytest.skip("NumPy not available")
     
     # Create a simple test image
     test_img = np.zeros((100, 100), dtype=np.uint8)
