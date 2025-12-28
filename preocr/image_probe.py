@@ -1,7 +1,10 @@
 """Image analysis and entropy calculation."""
 
 from pathlib import Path
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+if TYPE_CHECKING:
+    from PIL import Image as PILImage
 
 try:
     from PIL import Image
@@ -75,7 +78,7 @@ def analyze_image(file_path: str) -> Dict[str, any]:
         }
 
 
-def _calculate_entropy(image: Image.Image) -> float:
+def _calculate_entropy(image: Any) -> float:
     """
     Calculate entropy of an image.
     
