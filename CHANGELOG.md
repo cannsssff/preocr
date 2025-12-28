@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2024-01-XX
+## [0.1.1] - 2024-12-28
+
+### Changed
+- Updated GitHub URLs in package metadata to point to correct repository
+
+## [0.1.0] - 2024-12-28
 
 ### Added
 - Initial release
@@ -19,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite
 - Documentation and examples
 
-[Unreleased]: https://github.com/yourusername/preocr/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/yourusername/preocr/releases/tag/v0.1.0
+[Unreleased]: https://github.com/yuvaraj3855/preocr/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/yuvaraj3855/preocr/releases/tag/v0.1.1
+[0.1.0]: https://github.com/yuvaraj3855/preocr/releases/tag/v0.1.0
 
