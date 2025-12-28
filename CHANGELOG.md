@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2024-12-29
+
+### Changed
+- Updated `layout-refinement` dependency to use `opencv-python-headless` (lighter, better for server environments)
+- Improved OpenCV layout detection algorithm with adaptive thresholding and better filtering
+- Enhanced multi-page analysis: analyzes all pages for small PDFs, smart sampling for large ones
+- Improved decision refinement using `layout_type` for more accurate decisions
+
+### Added
+- Documentation for libmagic system requirement with OS-specific installation instructions
+- Better result structure with OpenCV analysis details in `layout["opencv"]`
+
+### Fixed
+- Better handling of missing OpenCV dependencies
+- Improved layout display formatting in examples
+
 ## [0.3.0] - 2024-12-29
 
 ### Added
