@@ -10,10 +10,12 @@ from .constants import (
     MEDIUM_CONFIDENCE,
     MIN_OFFICE_TEXT_LENGTH,
     MIN_TEXT_LENGTH,
+    ReasonCode,
 )
+from .reason_codes import get_reason_description
 
 
-def decide(signals: Dict[str, any]) -> Tuple[bool, str, float, str]:
+def decide(signals: Dict[str, any]) -> Tuple[bool, str, float, str, str]:
     """
     Decide if a file needs OCR based on collected signals.
     
@@ -26,6 +28,7 @@ def decide(signals: Dict[str, any]) -> Tuple[bool, str, float, str]:
             - reason: Human-readable reason for the decision
             - confidence: Confidence score (0.0-1.0)
             - category: "structured" or "unstructured"
+            - reason_code: Structured reason code (e.g., "PDF_DIGITAL", "IMAGE_FILE")
     """
     mime = signals.get("mime", "")
     text_length = signals.get("text_length", 0)
@@ -36,9 +39,10 @@ def decide(signals: Dict[str, any]) -> Tuple[bool, str, float, str]:
     if mime.startswith("text/"):
         return (
             False,
-            "text file with extractable content",
+            get_reason_description(ReasonCode.TEXT_FILE),
             HIGH_CONFIDENCE,
             CATEGORY_STRUCTURED,
+            ReasonCode.TEXT_FILE,
         )
     
     # Rule 2: Office documents with text - NO OCR
@@ -46,25 +50,28 @@ def decide(signals: Dict[str, any]) -> Tuple[bool, str, float, str]:
         if text_length >= MIN_OFFICE_TEXT_LENGTH:
             return (
                 False,
-                f"office document with {text_length} characters of text",
+                f"{get_reason_description(ReasonCode.OFFICE_WITH_TEXT)} ({text_length} chars)",
                 HIGH_CONFIDENCE,
                 CATEGORY_STRUCTURED,
+                ReasonCode.OFFICE_WITH_TEXT,
             )
         else:
             return (
                 True,
-                f"office document with insufficient text ({text_length} chars)",
+                f"{get_reason_description(ReasonCode.OFFICE_NO_TEXT)} ({text_length} chars)",
                 MEDIUM_CONFIDENCE,
                 CATEGORY_UNSTRUCTURED,
+                ReasonCode.OFFICE_NO_TEXT,
             )
     
     # Rule 3: Images - YES OCR (always)
     if mime.startswith("image/"):
         return (
             True,
-            "image file (no text extraction possible)",
+            get_reason_description(ReasonCode.IMAGE_FILE),
             HIGH_CONFIDENCE,
             CATEGORY_UNSTRUCTURED,
+            ReasonCode.IMAGE_FILE,
         )
     
     # Rule 4: PDFs
@@ -72,25 +79,28 @@ def decide(signals: Dict[str, any]) -> Tuple[bool, str, float, str]:
         if text_length >= MIN_TEXT_LENGTH:
             return (
                 False,
-                f"digital PDF with {text_length} characters of extractable text",
+                f"{get_reason_description(ReasonCode.PDF_DIGITAL)} ({text_length} chars)",
                 HIGH_CONFIDENCE,
                 CATEGORY_STRUCTURED,
+                ReasonCode.PDF_DIGITAL,
             )
         else:
             return (
                 True,
-                f"PDF without extractable text ({text_length} chars) - likely scanned",
+                f"{get_reason_description(ReasonCode.PDF_SCANNED)} ({text_length} chars)",
                 MEDIUM_CONFIDENCE,
                 CATEGORY_UNSTRUCTURED,
+                ReasonCode.PDF_SCANNED,
             )
     
     # Rule 5: JSON/XML - NO OCR
     if mime in ["application/json", "application/xml"] or extension in ["json", "xml"]:
         return (
             False,
-            "structured data file (JSON/XML)",
+            get_reason_description(ReasonCode.STRUCTURED_DATA),
             HIGH_CONFIDENCE,
             CATEGORY_STRUCTURED,
+            ReasonCode.STRUCTURED_DATA,
         )
     
     # Rule 6: HTML - NO OCR (text can be extracted)
@@ -98,32 +108,36 @@ def decide(signals: Dict[str, any]) -> Tuple[bool, str, float, str]:
         if text_length >= MIN_TEXT_LENGTH:
             return (
                 False,
-                f"HTML file with {text_length} characters of text",
+                f"{get_reason_description(ReasonCode.HTML_WITH_TEXT)} ({text_length} chars)",
                 HIGH_CONFIDENCE,
                 CATEGORY_STRUCTURED,
+                ReasonCode.HTML_WITH_TEXT,
             )
         else:
             return (
                 True,
-                "HTML file with minimal content",
+                get_reason_description(ReasonCode.HTML_MINIMAL),
                 LOW_CONFIDENCE,
                 CATEGORY_UNSTRUCTURED,
+                ReasonCode.HTML_MINIMAL,
             )
     
     # Rule 7: Unknown binaries - YES OCR (conservative default)
     if is_binary:
         return (
             True,
-            "unknown binary file type",
+            get_reason_description(ReasonCode.UNKNOWN_BINARY),
             LOW_CONFIDENCE,
             CATEGORY_UNSTRUCTURED,
+            ReasonCode.UNKNOWN_BINARY,
         )
     
     # Fallback: default to needing OCR
     return (
         True,
-        "unrecognized file type",
+        get_reason_description(ReasonCode.UNRECOGNIZED_TYPE),
         LOW_CONFIDENCE,
         CATEGORY_UNSTRUCTURED,
+        ReasonCode.UNRECOGNIZED_TYPE,
     )
 

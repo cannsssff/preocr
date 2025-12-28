@@ -1,18 +1,22 @@
 """Main API for OCR detection."""
 
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional, Union
 
 from . import decision
 from . import filetype
 from . import image_probe
 from . import office_probe
+from . import page_detection
 from . import pdf_probe
 from . import signals
 from . import text_probe
 
 
-def needs_ocr(file_path: Union[str, Path]) -> Dict[str, Any]:
+def needs_ocr(
+    file_path: Union[str, Path],
+    page_level: bool = False,
+) -> Dict[str, Any]:
     """
     Determine if a file needs OCR processing.
     
@@ -21,6 +25,7 @@ def needs_ocr(file_path: Union[str, Path]) -> Dict[str, Any]:
     
     Args:
         file_path: Path to the file to analyze (string or Path object)
+        page_level: If True, return page-level analysis for PDFs (default: False)
         
     Returns:
         Dictionary with keys:
@@ -29,12 +34,20 @@ def needs_ocr(file_path: Union[str, Path]) -> Dict[str, Any]:
             - category: "structured" (no OCR) or "unstructured" (needs OCR)
             - confidence: Confidence score (0.0-1.0)
             - reason: Human-readable reason for the decision
+            - reason_code: Structured reason code (e.g., "PDF_DIGITAL", "IMAGE_FILE")
             - signals: Dictionary of all collected signals (for debugging)
+            - pages: (if page_level=True for PDFs) Page-level analysis results
             
     Example:
         >>> result = needs_ocr("document.pdf")
         >>> if result["needs_ocr"]:
         ...     run_ocr("document.pdf")
+        
+        >>> # Page-level analysis
+        >>> result = needs_ocr("document.pdf", page_level=True)
+        >>> for page in result.get("pages", []):
+        ...     if page["needs_ocr"]:
+        ...         print(f"Page {page['page_number']} needs OCR")
     """
     path = Path(file_path)
     
@@ -48,10 +61,17 @@ def needs_ocr(file_path: Union[str, Path]) -> Dict[str, Any]:
     # Step 2: Extract text based on file type
     text_result = None
     image_result = None
+    page_analysis = None
     
     if mime == "application/pdf":
-        # PDF text extraction
-        text_result = pdf_probe.extract_pdf_text(str(path))
+        # PDF text extraction (with optional page-level analysis)
+        text_result = pdf_probe.extract_pdf_text(str(path), page_level=page_level)
+        
+        # Perform page-level analysis if requested
+        if page_level and "pages" in text_result:
+            page_analysis = page_detection.analyze_pdf_pages(
+                str(path), file_info, text_result
+            )
     elif "officedocument" in mime or file_info["extension"] in ["docx", "pptx", "xlsx"]:
         # Office document text extraction
         text_result = office_probe.extract_office_text(str(path), mime)
@@ -68,19 +88,36 @@ def needs_ocr(file_path: Union[str, Path]) -> Dict[str, Any]:
     )
     
     # Step 4: Make decision
-    needs_ocr_flag, reason, confidence, category = decision.decide(collected_signals)
+    needs_ocr_flag, reason, confidence, category, reason_code = decision.decide(collected_signals)
     
     # Step 5: Determine file type category for user
     file_type_category = _get_file_type_category(mime, file_info["extension"])
     
-    return {
+    # Build result dictionary
+    result = {
         "needs_ocr": needs_ocr_flag,
         "file_type": file_type_category,
         "category": category,
         "confidence": confidence,
         "reason": reason,
+        "reason_code": reason_code,
         "signals": collected_signals,
     }
+    
+    # Add page-level results if available
+    if page_analysis and "pages" in page_analysis:
+        result["pages"] = page_analysis.get("pages", [])
+        result["page_count"] = page_analysis.get("page_count", 0)
+        result["pages_needing_ocr"] = page_analysis.get("pages_needing_ocr", 0)
+        result["pages_with_text"] = page_analysis.get("pages_with_text", 0)
+        # Override overall decision with page-level analysis if available
+        if page_analysis.get("overall_needs_ocr") is not None:
+            result["needs_ocr"] = page_analysis["overall_needs_ocr"]
+            result["confidence"] = page_analysis["overall_confidence"]
+            result["reason_code"] = page_analysis["overall_reason_code"]
+            result["reason"] = page_analysis["overall_reason"]
+    
+    return result
 
 
 def _get_file_type_category(mime: str, extension: str) -> str:

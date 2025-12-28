@@ -21,6 +21,9 @@ Instead of performing OCR to detect OCR, PreOCR uses intelligent file analysis:
 - ✅ **OCR-free**: Never performs OCR to detect OCR
 - ✅ **Extensible**: Easy to add new file type handlers
 - ✅ **Conservative**: When uncertain, defaults to "needs OCR"
+- ✅ **Page-level detection**: Analyze PDFs page-by-page (v0.2.0+)
+- ✅ **Reason codes**: Structured codes for programmatic handling (v0.2.0+)
+- ✅ **Enhanced confidence**: More accurate confidence scoring (v0.2.0+)
 
 ## Supported File Types
 
@@ -47,9 +50,16 @@ result = needs_ocr("document.pdf")
 
 if result["needs_ocr"]:
     print(f"File needs OCR: {result['reason']}")
+    print(f"Reason code: {result['reason_code']}")
     # Run your OCR here (e.g., MinerU)
 else:
     print(f"File is already machine-readable: {result['reason']}")
+
+# Page-level analysis for PDFs
+result = needs_ocr("document.pdf", page_level=True)
+for page in result.get("pages", []):
+    if page["needs_ocr"]:
+        print(f"Page {page['page_number']} needs OCR")
 ```
 
 ## API Reference
@@ -61,6 +71,10 @@ Main API function that determines if a file needs OCR.
 **Parameters:**
 - `file_path` (str or Path): Path to the file to analyze
 
+**Parameters:**
+- `file_path` (str or Path): Path to the file to analyze
+- `page_level` (bool, optional): If True, return page-level analysis for PDFs (default: False)
+
 **Returns:**
 Dictionary with the following keys:
 - `needs_ocr` (bool): Whether OCR is needed
@@ -68,7 +82,13 @@ Dictionary with the following keys:
 - `category` (str): "structured" (no OCR) or "unstructured" (needs OCR)
 - `confidence` (float): Confidence score (0.0-1.0)
 - `reason` (str): Human-readable reason for the decision
+- `reason_code` (str): Structured reason code (e.g., "PDF_DIGITAL", "IMAGE_FILE", "PDF_MIXED")
 - `signals` (dict): All collected detection signals (for debugging)
+- `pages` (list, optional): Page-level results (if `page_level=True` for PDFs)
+  - Each page contains: `page_number`, `needs_ocr`, `text_length`, `confidence`, `reason_code`, `reason`
+- `page_count` (int, optional): Total number of pages (for PDFs with page-level analysis)
+- `pages_needing_ocr` (int, optional): Number of pages that need OCR
+- `pages_with_text` (int, optional): Number of pages with extractable text
 
 **Example:**
 
@@ -80,7 +100,8 @@ print(result)
 #     "file_type": "pdf",
 #     "category": "structured",
 #     "confidence": 0.9,
-#     "reason": "digital PDF with 1234 characters of extractable text",
+#     "reason": "Digital PDF with extractable text (1234 chars)",
+#     "reason_code": "PDF_DIGITAL",
 #     "signals": {
 #         "mime": "application/pdf",
 #         "extension": "pdf",
@@ -89,6 +110,12 @@ print(result)
 #         ...
 #     }
 # }
+
+# Page-level analysis
+result = needs_ocr("mixed_document.pdf", page_level=True)
+print(result["reason_code"])  # "PDF_MIXED" if some pages need OCR
+for page in result["pages"]:
+    print(f"Page {page['page_number']}: {page['reason_code']} - {page['reason']}")
 ```
 
 ## Usage Examples
@@ -139,6 +166,23 @@ def process_document(file_path):
     else:
         # Use existing text extraction
         print(f"Using existing text from {file_path}")
+
+# Page-level processing for PDFs
+def process_pdf_pages(file_path):
+    result = needs_ocr(file_path, page_level=True)
+    
+    if result["reason_code"] == "PDF_MIXED":
+        # Process only pages that need OCR
+        for page in result["pages"]:
+            if page["needs_ocr"]:
+                print(f"OCR needed for page {page['page_number']}")
+                # ocr_single_page(file_path, page["page_number"])
+    elif result["needs_ocr"]:
+        # All pages need OCR
+        print("All pages need OCR")
+    else:
+        # All pages are digital
+        print("All pages are digital - no OCR needed")
 ```
 
 ## Architecture
@@ -161,12 +205,47 @@ Result (needs_ocr: bool)
 
 PreOCR uses rule-based logic to make decisions:
 
-1. **Plain text formats** → NO OCR
-2. **Office docs with text** → NO OCR
-3. **PDFs with extractable text** → NO OCR
-4. **PDFs without text** → YES OCR (likely scanned)
-5. **Images** → YES OCR (always)
-6. **Unknown binaries** → YES OCR (conservative default)
+1. **Plain text formats** → NO OCR (`TEXT_FILE`)
+2. **Office docs with text** → NO OCR (`OFFICE_WITH_TEXT`)
+3. **PDFs with extractable text** → NO OCR (`PDF_DIGITAL`)
+4. **PDFs without text** → YES OCR (`PDF_SCANNED`) - likely scanned
+5. **Images** → YES OCR (`IMAGE_FILE`) - always
+6. **Unknown binaries** → YES OCR (`UNKNOWN_BINARY`) - conservative default
+
+## Reason Codes
+
+PreOCR provides structured reason codes for programmatic handling:
+
+### No OCR Needed
+- `TEXT_FILE`: Plain text file
+- `OFFICE_WITH_TEXT`: Office document with sufficient text
+- `PDF_DIGITAL`: Digital PDF with extractable text
+- `STRUCTURED_DATA`: JSON/XML files
+- `HTML_WITH_TEXT`: HTML with sufficient content
+
+### OCR Needed
+- `IMAGE_FILE`: Image file (no text extraction possible)
+- `OFFICE_NO_TEXT`: Office document with insufficient text
+- `PDF_SCANNED`: PDF appears to be scanned
+- `HTML_MINIMAL`: HTML with minimal content
+- `UNKNOWN_BINARY`: Unknown binary file type
+- `UNRECOGNIZED_TYPE`: Unrecognized file type
+
+### Page-Level Codes (for PDFs with page_level=True)
+- `PDF_PAGE_DIGITAL`: Individual page has extractable text
+- `PDF_PAGE_SCANNED`: Individual page appears scanned
+- `PDF_MIXED`: PDF contains both digital and scanned pages
+
+**Example:**
+```python
+result = needs_ocr("document.pdf")
+if result["reason_code"] == "PDF_MIXED":
+    # Handle mixed PDF
+    pass
+elif result["reason_code"] == "PDF_SCANNED":
+    # All pages need OCR
+    pass
+```
 
 ## Requirements
 
@@ -177,7 +256,7 @@ PreOCR uses rule-based logic to make decisions:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/preocr.git
+git clone https://github.com/yuvaraj3855/preocr.git
 cd preocr
 
 # Install in development mode

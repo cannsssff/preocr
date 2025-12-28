@@ -47,7 +47,7 @@ def test_needs_ocr_structure():
         result = detector.needs_ocr(temp_path)
         
         # Check all required keys
-        required_keys = ["needs_ocr", "file_type", "category", "confidence", "reason", "signals"]
+        required_keys = ["needs_ocr", "file_type", "category", "confidence", "reason", "reason_code", "signals"]
         for key in required_keys:
             assert key in result, f"Missing key: {key}"
         
@@ -57,6 +57,7 @@ def test_needs_ocr_structure():
         assert isinstance(result["category"], str)
         assert isinstance(result["confidence"], float)
         assert isinstance(result["reason"], str)
+        assert isinstance(result["reason_code"], str)
         assert isinstance(result["signals"], dict)
     finally:
         Path(temp_path).unlink()
