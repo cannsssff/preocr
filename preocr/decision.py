@@ -235,34 +235,35 @@ def refine_with_opencv(
     image_coverage_opencv = opencv_result.get("image_coverage", 0.0)
     has_text_regions = opencv_result.get("has_text_regions", False)
     has_image_regions = opencv_result.get("has_image_regions", False)
+    layout_type = opencv_result.get("layout_type", "unknown")
     layout_complexity = opencv_result.get("layout_complexity", "simple")
     
     # Refinement logic based on OpenCV analysis
-    # If OpenCV detects text regions but heuristics found little text,
-    # it might be scanned text that needs OCR
-    if has_text_regions and text_length < MIN_TEXT_LENGTH:
-        # Text regions detected but no extractable text = likely scanned
-        if text_coverage_opencv > 10:
+    # Use layout_type for more accurate decisions
+    
+    # Case 1: Text-only layout
+    if layout_type == "text_only":
+        if text_length >= MIN_TEXT_LENGTH and text_coverage_opencv > 15:
+            # Digital text document
+            return (
+                False,
+                f"{get_reason_description(ReasonCode.PDF_DIGITAL)} (OpenCV detected text-only layout, {text_length} chars, {text_coverage_opencv:.1f}% coverage)",
+                min(initial_confidence + 0.15, HIGH_CONFIDENCE),
+                CATEGORY_STRUCTURED,
+                ReasonCode.PDF_DIGITAL,
+            )
+        elif text_length < MIN_TEXT_LENGTH and text_coverage_opencv > 10:
+            # Text regions detected but no extractable text = likely scanned text
             return (
                 True,
-                f"{get_reason_description(ReasonCode.PDF_SCANNED)} (OpenCV detected text regions but no extractable text, {text_coverage_opencv:.1f}% coverage)",
+                f"{get_reason_description(ReasonCode.PDF_SCANNED)} (OpenCV detected text-only layout but no extractable text, {text_coverage_opencv:.1f}% coverage)",
                 min(initial_confidence + 0.15, HIGH_CONFIDENCE),
                 CATEGORY_UNSTRUCTURED,
                 ReasonCode.PDF_SCANNED,
             )
     
-    # If OpenCV detects significant text coverage, refine confidence upward
-    if text_coverage_opencv > 15 and text_length >= MIN_TEXT_LENGTH:
-        return (
-            False,
-            f"{get_reason_description(ReasonCode.PDF_DIGITAL)} (OpenCV confirmed text regions, {text_length} chars, {text_coverage_opencv:.1f}% coverage)",
-            min(initial_confidence + 0.1, HIGH_CONFIDENCE),
-            CATEGORY_STRUCTURED,
-            ReasonCode.PDF_DIGITAL,
-        )
-    
-    # If OpenCV detects image regions but no text, definitely needs OCR
-    if has_image_regions and not has_text_regions and text_length < MIN_TEXT_LENGTH:
+    # Case 2: Image-only layout
+    elif layout_type == "image_only":
         return (
             True,
             f"{get_reason_description(ReasonCode.PDF_SCANNED)} (OpenCV detected image-only layout, {image_coverage_opencv:.1f}% images)",
@@ -271,13 +272,13 @@ def refine_with_opencv(
             ReasonCode.PDF_SCANNED,
         )
     
-    # Mixed content detected by OpenCV
-    if has_text_regions and has_image_regions:
-        if text_coverage_opencv > 10 and text_length >= MIN_TEXT_LENGTH:
+    # Case 3: Mixed content layout
+    elif layout_type == "mixed":
+        if text_coverage_opencv > 15 and text_length >= MIN_TEXT_LENGTH:
             # Text is significant, might not need full OCR
             return (
                 False,
-                f"{get_reason_description(ReasonCode.PDF_DIGITAL)} (OpenCV detected mixed content, text sufficient, {text_length} chars)",
+                f"{get_reason_description(ReasonCode.PDF_DIGITAL)} (OpenCV detected mixed content, text sufficient, {text_length} chars, {text_coverage_opencv:.1f}% text, {image_coverage_opencv:.1f}% images)",
                 min(initial_confidence + 0.1, MEDIUM_CONFIDENCE + 0.1),
                 CATEGORY_STRUCTURED,
                 ReasonCode.PDF_DIGITAL,

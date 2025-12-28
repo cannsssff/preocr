@@ -105,9 +105,9 @@ def needs_ocr(
     needs_ocr_flag, reason, confidence, category, reason_code = decision.decide(collected_signals)
     
     # Step 5: Confidence check → OpenCV layout refinement (if needed)
-    # If confidence is low, use OpenCV to refine the decision
-    if mime == "application/pdf" and confidence < LAYOUT_REFINEMENT_THRESHOLD:
-        opencv_result = opencv_layout.analyze_with_opencv(str(path), page_num=0)
+    # If confidence is low OR layout_aware is True, use OpenCV to refine the decision
+    if mime == "application/pdf" and (layout_aware or confidence < LAYOUT_REFINEMENT_THRESHOLD):
+        opencv_result = opencv_layout.analyze_with_opencv(str(path), page_level=page_level)
         if opencv_result:
             # Refine decision based on OpenCV analysis
             needs_ocr_flag, reason, confidence, category, reason_code = decision.refine_with_opencv(
@@ -143,7 +143,7 @@ def needs_ocr(
             result["reason_code"] = page_analysis["overall_reason_code"]
             result["reason"] = page_analysis["overall_reason"]
     
-    # Add layout analysis results if available
+    # Add layout analysis results if available (from pdfplumber-based analyzer)
     if layout_result:
         result["layout"] = {
             "text_coverage": layout_result.get("text_coverage", 0.0),
@@ -155,6 +155,26 @@ def needs_ocr(
         }
         if page_level and "pages" in layout_result:
             result["layout"]["pages"] = layout_result["pages"]
+    
+    # Add OpenCV layout results if available (from OpenCV-based analyzer)
+    if collected_signals.get("opencv_layout"):
+        opencv_layout_data = collected_signals["opencv_layout"]
+        if "layout" not in result:
+            result["layout"] = {}
+        result["layout"]["opencv"] = {
+            "text_coverage": opencv_layout_data.get("text_coverage", 0.0),
+            "image_coverage": opencv_layout_data.get("image_coverage", 0.0),
+            "text_regions": opencv_layout_data.get("text_regions", 0),
+            "image_regions": opencv_layout_data.get("image_regions", 0),
+            "has_text_regions": opencv_layout_data.get("has_text_regions", False),
+            "has_image_regions": opencv_layout_data.get("has_image_regions", False),
+            "layout_type": opencv_layout_data.get("layout_type", "unknown"),
+            "layout_complexity": opencv_layout_data.get("layout_complexity", "unknown"),
+            "total_pages": opencv_layout_data.get("total_pages", 0),
+            "pages_analyzed": opencv_layout_data.get("pages_analyzed", 0),
+        }
+        if page_level and "pages" in opencv_layout_data:
+            result["layout"]["opencv"]["pages"] = opencv_layout_data["pages"]
     
     return result
 
