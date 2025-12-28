@@ -53,15 +53,27 @@ jobs:
           
           echo "✓ Version consistency check passed"
       
+      - name: Install tomli for Python < 3.11
+        run: |
+          python -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" || pip install --quiet tomli
+      
       - name: Validate version in pyproject.toml
         run: |
           python -c "
           import sys
           sys.path.insert(0, '.')
           from preocr.version import __version__
-          import tomllib
-          with open('pyproject.toml', 'rb') as f:
-              config = tomllib.load(f)
+          
+          # Use tomllib for Python >= 3.11, tomli for older versions
+          if sys.version_info >= (3, 11):
+              import tomllib
+              with open('pyproject.toml', 'rb') as f:
+                  config = tomllib.load(f)
+          else:
+              import tomli
+              with open('pyproject.toml', 'rb') as f:
+                  config = tomli.load(f)
+          
           # Check that version in pyproject.toml matches version.py
           pyproject_version = config['project']['version']
           if pyproject_version != __version__:
