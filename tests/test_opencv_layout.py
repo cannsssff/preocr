@@ -84,6 +84,9 @@ def test_analyze_with_opencv_structure():
 
 def test_contours_overlap():
     """Test contour overlap detection."""
+    # Skip if cv2 not available
+    pytest.importorskip("cv2", reason="OpenCV not available (optional dependency)")
+    
     # Mock contours
     contour1 = MagicMock()
     contour2 = MagicMock()
@@ -96,6 +99,16 @@ def test_contours_overlap():
         
         result = opencv_layout._contours_overlap(contour1, contour2)
         assert isinstance(result, bool)
+
+
+def test_contours_overlap_no_cv2():
+    """Test that _contours_overlap returns False when cv2 is None."""
+    with patch("preocr.opencv_layout.cv2", None):
+        contour1 = MagicMock()
+        contour2 = MagicMock()
+        
+        result = opencv_layout._contours_overlap(contour1, contour2)
+        assert result is False
 
 
 def test_analyze_layout_structure():

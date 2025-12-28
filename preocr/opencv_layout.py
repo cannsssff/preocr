@@ -171,6 +171,9 @@ def _contours_overlap(contour1, contour2, overlap_threshold: float = 0.3) -> boo
     Returns:
         True if contours overlap significantly
     """
+    if not cv2:
+        return False
+    
     try:
         # Get bounding boxes
         x1, y1, w1, h1 = cv2.boundingRect(contour1)
