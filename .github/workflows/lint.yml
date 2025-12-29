@@ -42,7 +42,7 @@ jobs:
 
     - name: Run Ruff
       run: |
-        ruff check preocr/ tests/ examples/
+        ruff check preocr/ tests/ examples/ --fix
 
     - name: Run Ruff format check
       run: |

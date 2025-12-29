@@ -4,7 +4,6 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from preocr import detector, decision
 from preocr.constants import LAYOUT_REFINEMENT_THRESHOLD

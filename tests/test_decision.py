@@ -1,6 +1,5 @@
 """Tests for decision engine."""
 
-import pytest
 
 from preocr import decision
 

@@ -3,7 +3,6 @@
 import tempfile
 from pathlib import Path
 
-import pytest
 
 from preocr import detector, page_detection
 from preocr.constants import ReasonCode
