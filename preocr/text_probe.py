@@ -75,6 +75,7 @@ def _extract_plain_text(path: Path) -> Dict[str, Any]:
         except Exception as e:
             logger.warning(f"Text extraction failed: {e}")
 
+    # Always return, even if text extraction failed (text will be empty string)
     return {
         "text_length": len(text),
         "text": text[:1000] if len(text) > 1000 else text,  # Truncate for large files
@@ -88,6 +89,8 @@ def _extract_html_text(path: Path) -> Dict[str, Any]:
         # Fallback: basic HTML tag removal
         return _extract_plain_text(path)
 
+    # BeautifulSoup is not None here
+    assert BeautifulSoup is not None
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()

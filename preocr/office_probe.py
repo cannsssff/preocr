@@ -111,18 +111,20 @@ def _extract_pptx(path: Path) -> Dict[str, Any]:
             "document_type": "pptx",
         }
 
+    # Presentation is not None here
+    assert Presentation is not None
     try:
         prs = Presentation(str(path))
         text_parts = []
-
+        
         # Extract text from slides
         for slide in prs.slides:
             for shape in slide.shapes:
                 if hasattr(shape, "text") and shape.text.strip():
                     text_parts.append(shape.text)
-
+        
         full_text = "\n".join(text_parts)
-
+        
         return {
             "text_length": len(full_text),
             "text": full_text[:1000] if len(full_text) > 1000 else full_text,
