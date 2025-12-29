@@ -56,7 +56,7 @@ def extract_office_text(file_path: str, mime_type: str) -> Dict[str, Any]:
 
 def _extract_docx(path: Path) -> Dict[str, Any]:
     """Extract text from DOCX file."""
-    if Document is None:
+    if Document is None:  # type: ignore[unreachable]
         return {
             "text_length": 0,
             "text": "",
@@ -104,7 +104,7 @@ def _extract_docx(path: Path) -> Dict[str, Any]:
 
 def _extract_pptx(path: Path) -> Dict[str, Any]:
     """Extract text from PPTX file."""
-    if Presentation is None:
+    if Presentation is None:  # type: ignore[unreachable]
         return {
             "text_length": 0,
             "text": "",

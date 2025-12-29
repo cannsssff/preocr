@@ -76,7 +76,7 @@ def _extract_plain_text(path: Path) -> Dict[str, Any]:
             logger.warning(f"Text extraction failed: {e}")
 
     # Always return, even if text extraction failed (text will be empty string)
-    return {
+    return {  # type: ignore[unreachable]
         "text_length": len(text),
         "text": text[:1000] if len(text) > 1000 else text,  # Truncate for large files
         "encoding": encoding,
