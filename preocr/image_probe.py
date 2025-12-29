@@ -11,12 +11,18 @@ logger = get_logger(__name__)
 if TYPE_CHECKING:
     from PIL import Image as PILImage
 
+# Declare these as Optional[Any] so mypy knows they can be None
+Image: Optional[Any]
+np: Optional[Any]
+
 try:
-    from PIL import Image
-    import numpy as np
+    from PIL import Image as _Image
+    import numpy as _np
+    Image = _Image
+    np = _np
 except ImportError:
-    Image = None  # type: ignore[assignment]
-    np = None  # type: ignore[assignment]
+    Image = None
+    np = None
 
 
 def is_image_file(mime_type: str) -> bool:
