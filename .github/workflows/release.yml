@@ -74,14 +74,25 @@ jobs:
               with open('pyproject.toml', 'rb') as f:
                   config = tomli.load(f)
           
-          # Check that version in pyproject.toml matches version.py
-          pyproject_version = config['project']['version']
-          if pyproject_version != __version__:
-              print(f'ERROR: Version mismatch!')
-              print(f'Version in version.py: {__version__}')
-              print(f'Version in pyproject.toml: {pyproject_version}')
+          # Check that pyproject.toml uses dynamic version (not static)
+          project_config = config.get('project', {})
+          if 'version' in project_config:
+              print(f'ERROR: pyproject.toml should use dynamic version, not static!')
+              print(f'Found static version: {project_config[\"version\"]}')
               exit(1)
-          print(f'✓ pyproject.toml version matches: {__version__}')
+          
+          if 'dynamic' not in project_config or 'version' not in project_config['dynamic']:
+              print(f'ERROR: pyproject.toml should have dynamic = [\"version\"]')
+              exit(1)
+          
+          # Check that setuptools.dynamic.version is configured
+          setuptools_config = config.get('tool', {}).get('setuptools', {})
+          dynamic_config = setuptools_config.get('dynamic', {})
+          if 'version' not in dynamic_config:
+              print(f'ERROR: tool.setuptools.dynamic.version not configured')
+              exit(1)
+          
+          print(f'✓ pyproject.toml correctly uses dynamic version from version.py: {__version__}')
           "
       
       - name: Validate version in __init__.py
