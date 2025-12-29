@@ -11,17 +11,17 @@ logger = get_logger(__name__)
 try:
     from docx import Document
 except ImportError:
-    Document = None
+    Document = None  # type: ignore[assignment, misc]
 
 try:
     from pptx import Presentation
 except ImportError:
-    Presentation = None
+    Presentation = None  # type: ignore[assignment, misc]
 
 try:
     from openpyxl import load_workbook
 except ImportError:
-    load_workbook = None
+    load_workbook = None  # type: ignore[assignment, misc]
 
 
 def extract_office_text(file_path: str, mime_type: str) -> Dict[str, Any]:
@@ -56,15 +56,15 @@ def extract_office_text(file_path: str, mime_type: str) -> Dict[str, Any]:
 
 def _extract_docx(path: Path) -> Dict[str, Any]:
     """Extract text from DOCX file."""
-    if not Document:
+    if Document is None:
         return {
             "text_length": 0,
             "text": "",
             "document_type": "docx",
         }
-
+    
     try:
-        doc = Document(path)
+        doc = Document(str(path))
         text_parts = []
 
         # Extract paragraphs
@@ -104,15 +104,15 @@ def _extract_docx(path: Path) -> Dict[str, Any]:
 
 def _extract_pptx(path: Path) -> Dict[str, Any]:
     """Extract text from PPTX file."""
-    if not Presentation:
+    if Presentation is None:
         return {
             "text_length": 0,
             "text": "",
             "document_type": "pptx",
         }
-
+    
     try:
-        prs = Presentation(path)
+        prs = Presentation(str(path))
         text_parts = []
 
         # Extract text from slides

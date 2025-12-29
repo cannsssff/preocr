@@ -347,7 +347,7 @@ def _contours_overlap(contour1, contour2, overlap_threshold: float = 0.3) -> boo
             return False
 
         overlap_ratio = overlap_area / union_area
-        return overlap_ratio >= overlap_threshold
+        return bool(overlap_ratio >= overlap_threshold)
     except Exception as e:
         logger.debug(f"Contour overlap check failed: {e}")
         return False

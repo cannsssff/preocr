@@ -2,15 +2,15 @@
 
 import mimetypes
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 try:
     import magic
 except ImportError:
-    magic = None
+    magic = None  # type: ignore[assignment]
 
 
-def detect_file_type(file_path: str) -> Dict[str, str]:
+def detect_file_type(file_path: str) -> Dict[str, Union[str, bool]]:
     """
     Detect file type using MIME detection and extension fallback.
 

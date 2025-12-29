@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 try:
     from bs4 import BeautifulSoup
 except ImportError:
-    BeautifulSoup = None
+    BeautifulSoup = None  # type: ignore[assignment, misc]
 
 
 def extract_text_from_file(file_path: str, mime_type: str) -> Dict[str, Any]:
@@ -75,10 +75,10 @@ def _extract_plain_text(path: Path) -> Dict[str, Any]:
 
 def _extract_html_text(path: Path) -> Dict[str, Any]:
     """Extract text from HTML files."""
-    if not BeautifulSoup:
+    if BeautifulSoup is None:
         # Fallback: basic HTML tag removal
         return _extract_plain_text(path)
-
+    
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()

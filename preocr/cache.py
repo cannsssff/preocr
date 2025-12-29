@@ -86,7 +86,7 @@ def get_cached_result(
 
         # Load cached result
         with open(cache_path, "r") as f:
-            result = json.load(f)
+            result: Dict[str, Any] = json.load(f)
 
         logger.debug(f"Cache hit for {file_path}")
         return result

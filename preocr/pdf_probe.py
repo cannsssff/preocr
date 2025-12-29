@@ -13,12 +13,12 @@ logger = get_logger(__name__)
 try:
     import pdfplumber
 except ImportError:
-    pdfplumber = None
+    pdfplumber = None  # type: ignore[assignment]
 
 try:
     import fitz  # PyMuPDF
 except ImportError:
-    fitz = None
+    fitz = None  # type: ignore[assignment]
 
 
 def extract_pdf_text(file_path: str, page_level: bool = False) -> Dict[str, Any]:
