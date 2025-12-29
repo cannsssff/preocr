@@ -21,7 +21,7 @@ except ImportError:
 try:
     from openpyxl import load_workbook
 except ImportError:
-    load_workbook = None  # type: ignore[assignment]
+    load_workbook = None
 
 
 def extract_office_text(file_path: str, mime_type: str) -> Dict[str, Any]:
@@ -104,15 +104,20 @@ def _extract_docx(path: Path) -> Dict[str, Any]:
 
 def _extract_pptx(path: Path) -> Dict[str, Any]:
     """Extract text from PPTX file."""
-    if Presentation is None:  # type: ignore[unreachable]
+    if Presentation is None:
         return {
             "text_length": 0,
             "text": "",
             "document_type": "pptx",
         }
 
-    # Presentation is not None here
-    assert Presentation is not None
+    # Presentation is not None here (mypy doesn't narrow after None check)
+    if Presentation is None:  # type: ignore[unreachable]
+        return {
+            "text_length": 0,
+            "text": "",
+            "document_type": "pptx",
+        }
     try:
         prs = Presentation(str(path))
         text_parts = []

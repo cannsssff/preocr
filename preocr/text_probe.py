@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 try:
     from bs4 import BeautifulSoup
 except ImportError:
-    BeautifulSoup = None  # type: ignore[assignment, misc]
+    BeautifulSoup = None  # type: ignore[assignment]
 
 
 def extract_text_from_file(file_path: str, mime_type: str) -> Dict[str, Any]:
@@ -67,7 +67,7 @@ def _extract_plain_text(path: Path) -> Dict[str, Any]:
             logger.warning(f"Text extraction failed: {e}")
 
     # Always return, even if text extraction failed (text will be empty string)
-    return {  # type: ignore[unreachable]
+    return {
         "text_length": len(text),
         "text": text[:1000] if len(text) > 1000 else text,  # Truncate for large files
         "encoding": encoding,
@@ -80,8 +80,9 @@ def _extract_html_text(path: Path) -> Dict[str, Any]:
         # Fallback: basic HTML tag removal
         return _extract_plain_text(path)
 
-    # BeautifulSoup is not None here
-    assert BeautifulSoup is not None
+    # BeautifulSoup is not None here (mypy doesn't narrow after None check)
+    if BeautifulSoup is None:  # type: ignore[unreachable]
+        return _extract_plain_text(path)
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()

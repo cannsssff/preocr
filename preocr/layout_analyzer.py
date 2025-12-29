@@ -16,7 +16,7 @@ except ImportError:
 try:
     import fitz  # PyMuPDF
 except ImportError:
-    fitz = None  # type: ignore[assignment]
+    fitz = None
 
 
 def analyze_pdf_layout(file_path: str, page_level: bool = False) -> Dict[str, Any]:
