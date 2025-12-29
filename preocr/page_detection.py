@@ -5,12 +5,13 @@ from typing import Any, Dict, List, Optional
 from .constants import MIN_TEXT_LENGTH, ReasonCode
 from .decision import decide
 from .reason_codes import get_reason_description
+from .filetype import FileTypeInfo
 from .signals import collect_signals
 
 
 def analyze_pdf_pages(
     file_path: str,
-    file_info: Dict[str, str],
+    file_info: FileTypeInfo,
     pdf_result: Dict[str, Any],
 ) -> Dict[str, Any]:
     """

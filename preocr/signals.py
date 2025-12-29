@@ -1,12 +1,14 @@
 """Signal collection and aggregation for OCR detection."""
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
+
+from .filetype import FileTypeInfo
 
 
 def collect_signals(
     file_path: str,
-    file_info: Dict[str, str],
+    file_info: FileTypeInfo,
     text_result: Optional[Dict[str, Any]] = None,
     image_result: Optional[Dict[str, Any]] = None,
     layout_result: Optional[Dict[str, Any]] = None,

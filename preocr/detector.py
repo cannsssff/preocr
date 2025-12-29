@@ -91,7 +91,8 @@ def needs_ocr(
     if progress_callback:
         progress_callback("detecting_file_type", 0.1)
     file_info = filetype.detect_file_type(str(path))
-    mime = file_info["mime"]
+    mime: str = file_info["mime"]
+    extension: str = file_info["extension"]
 
     # Step 2: Extract text based on file type
     text_result = None
@@ -120,7 +121,7 @@ def needs_ocr(
             page_analysis = page_detection.analyze_pdf_pages(
                 str(path), file_info, text_result
             )
-    elif "officedocument" in mime or file_info["extension"] in ["docx", "pptx", "xlsx"]:
+    elif "officedocument" in mime or extension in ["docx", "pptx", "xlsx"]:
         # Office document text extraction
         text_result = office_probe.extract_office_text(str(path), mime)
     elif mime.startswith("text/") or mime in ["text/html", "application/xhtml+xml"]:
@@ -153,7 +154,7 @@ def needs_ocr(
             collected_signals["opencv_layout"] = opencv_result
 
     # Step 6: Determine file type category for user
-    file_type_category = _get_file_type_category(mime, file_info["extension"])
+    file_type_category = _get_file_type_category(mime, extension)
 
     # Build result dictionary
     result = {

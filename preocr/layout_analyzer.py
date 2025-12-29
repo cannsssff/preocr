@@ -11,12 +11,12 @@ logger = get_logger(__name__)
 try:
     import pdfplumber
 except ImportError:
-    pdfplumber = None  # type: ignore[assignment]
+    pdfplumber = None  # type: ignore[assignment, misc]
 
 try:
     import fitz  # PyMuPDF
 except ImportError:
-    fitz = None  # type: ignore[assignment]
+    fitz = None  # type: ignore[assignment, misc]
 
 
 def analyze_pdf_layout(file_path: str, page_level: bool = False) -> Dict[str, Any]:

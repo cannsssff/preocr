@@ -2,7 +2,7 @@
 
 import mimetypes
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, TypedDict
 
 try:
     import magic
@@ -10,7 +10,15 @@ except ImportError:
     magic = None  # type: ignore[assignment]
 
 
-def detect_file_type(file_path: str) -> Dict[str, Union[str, bool]]:
+class FileTypeInfo(TypedDict):
+    """File type information dictionary."""
+
+    mime: str
+    extension: str
+    is_binary: bool
+
+
+def detect_file_type(file_path: str) -> FileTypeInfo:
     """
     Detect file type using MIME detection and extension fallback.
 

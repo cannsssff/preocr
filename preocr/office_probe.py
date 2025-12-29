@@ -62,7 +62,7 @@ def _extract_docx(path: Path) -> Dict[str, Any]:
             "text": "",
             "document_type": "docx",
         }
-    
+
     try:
         doc = Document(str(path))
         text_parts = []
@@ -110,7 +110,7 @@ def _extract_pptx(path: Path) -> Dict[str, Any]:
             "text": "",
             "document_type": "pptx",
         }
-    
+
     try:
         prs = Presentation(str(path))
         text_parts = []
