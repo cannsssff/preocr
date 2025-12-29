@@ -79,7 +79,7 @@ PreOCR uses a **hybrid adaptive pipeline**:
    ▼       ▼
 ┌─────┐ ┌─────────────────┐
 │Return│ │ OpenCV Layout   │ ← Only for edge cases
-│Fast! │ │ Analysis        │   (1-2 seconds)
+│Fast! │ │ Analysis        │   (0.5-3 seconds)
 └─────┘ └────────┬────────┘
                  │
                  ▼
@@ -96,7 +96,7 @@ PreOCR uses a **hybrid adaptive pipeline**:
 
 **Performance:**
 - **90% of files**: Fast path (< 1 second) - heuristics only
-- **10% of files**: Refined path (1-2 seconds) - heuristics + OpenCV
+- **10% of files**: Refined path (0.5-3 seconds) - heuristics + OpenCV (depends on page count)
 - **Overall accuracy**: 92-95% (vs 85-90% with heuristics alone)
 
 ## 📦 Installation
@@ -255,7 +255,7 @@ elif result["reason_code"] == "PDF_SCANNED":
 | Scenario | Time | Accuracy |
 |----------|------|----------|
 | Clear cases (90%) | < 1s | 99% |
-| Edge cases (10%) | 1-2s | 85-90% |
+| Edge cases (10%) | 0.5-3s | 85-90% |
 | **Overall** | **~1.1s** | **92-95%** |
 
 ## 🏗️ Architecture
