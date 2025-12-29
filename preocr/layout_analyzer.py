@@ -1,7 +1,12 @@
 """Layout analysis for PDFs to detect text regions, images, and mixed content."""
 
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+from .exceptions import LayoutAnalysisError
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     import pdfplumber
@@ -14,7 +19,7 @@ except ImportError:
     fitz = None
 
 
-def analyze_pdf_layout(file_path: str, page_level: bool = False) -> Dict[str, any]:
+def analyze_pdf_layout(file_path: str, page_level: bool = False) -> Dict[str, Any]:
     """
     Analyze PDF layout to detect text regions, images, and mixed content.
     
@@ -38,15 +43,19 @@ def analyze_pdf_layout(file_path: str, page_level: bool = False) -> Dict[str, an
     if pdfplumber:
         try:
             return _analyze_with_pdfplumber(path, page_level)
-        except Exception:
-            pass
+        except (IOError, OSError, PermissionError) as e:
+            logger.warning(f"Failed to read PDF file for layout analysis with pdfplumber: {e}")
+        except Exception as e:
+            logger.warning(f"Layout analysis failed with pdfplumber: {e}")
     
     # Fallback to PyMuPDF
     if fitz:
         try:
             return _analyze_with_pymupdf(path, page_level)
-        except Exception:
-            pass
+        except (IOError, OSError, PermissionError) as e:
+            logger.warning(f"Failed to read PDF file for layout analysis with PyMuPDF: {e}")
+        except Exception as e:
+            logger.warning(f"Layout analysis failed with PyMuPDF: {e}")
     
     # No analyzers available or both failed
     result = {
@@ -62,7 +71,7 @@ def analyze_pdf_layout(file_path: str, page_level: bool = False) -> Dict[str, an
     return result
 
 
-def _analyze_with_pdfplumber(path: Path, page_level: bool = False) -> Dict[str, any]:
+def _analyze_with_pdfplumber(path: Path, page_level: bool = False) -> Dict[str, Any]:
     """Analyze layout using pdfplumber (better layout detection)."""
     pages_data = []
     total_text_area = 0.0
@@ -167,7 +176,7 @@ def _analyze_with_pdfplumber(path: Path, page_level: bool = False) -> Dict[str, 
     return result
 
 
-def _analyze_with_pymupdf(path: Path, page_level: bool = False) -> Dict[str, any]:
+def _analyze_with_pymupdf(path: Path, page_level: bool = False) -> Dict[str, Any]:
     """Analyze layout using PyMuPDF (fallback, less detailed)."""
     doc = fitz.open(path)
     pages_data = []

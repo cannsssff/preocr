@@ -2,7 +2,12 @@
 
 import codecs
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
+
+from .exceptions import TextExtractionError
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     from bs4 import BeautifulSoup
@@ -10,7 +15,7 @@ except ImportError:
     BeautifulSoup = None
 
 
-def extract_text_from_file(file_path: str, mime_type: str) -> Dict[str, any]:
+def extract_text_from_file(file_path: str, mime_type: str) -> Dict[str, Any]:
     """
     Extract text from plain text files and HTML.
     
@@ -34,7 +39,7 @@ def extract_text_from_file(file_path: str, mime_type: str) -> Dict[str, any]:
         return {"text_length": 0, "text": "", "encoding": None}
 
 
-def _extract_plain_text(path: Path) -> Dict[str, any]:
+def _extract_plain_text(path: Path) -> Dict[str, Any]:
     """Extract text from plain text files."""
     encodings = ["utf-8", "latin-1", "cp1252", "iso-8859-1"]
     text = ""
@@ -56,8 +61,10 @@ def _extract_plain_text(path: Path) -> Dict[str, any]:
                 raw = f.read()
                 text = raw.decode("utf-8", errors="ignore")
                 encoding = "utf-8"
-        except Exception:
-            pass
+        except (IOError, OSError, PermissionError) as e:
+            logger.warning(f"Failed to read text file: {e}")
+        except Exception as e:
+            logger.warning(f"Text extraction failed: {e}")
     
     return {
         "text_length": len(text),
@@ -66,7 +73,7 @@ def _extract_plain_text(path: Path) -> Dict[str, any]:
     }
 
 
-def _extract_html_text(path: Path) -> Dict[str, any]:
+def _extract_html_text(path: Path) -> Dict[str, Any]:
     """Extract text from HTML files."""
     if not BeautifulSoup:
         # Fallback: basic HTML tag removal
@@ -88,7 +95,12 @@ def _extract_html_text(path: Path) -> Dict[str, any]:
             "text": text[:1000] if len(text) > 1000 else text,
             "encoding": "utf-8",
         }
-    except Exception:
+    except (IOError, OSError, PermissionError) as e:
+        logger.warning(f"Failed to read HTML file: {e}")
+        # Fallback to plain text extraction
+        return _extract_plain_text(path)
+    except Exception as e:
+        logger.warning(f"HTML text extraction failed: {e}")
         # Fallback to plain text extraction
         return _extract_plain_text(path)
 

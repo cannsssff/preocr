@@ -352,6 +352,59 @@ Dictionary with:
 - `pages` (list, optional): Page-level results
 - `layout` (dict, optional): Layout analysis results
 
+## 🔧 Configuration
+
+### Logging
+
+PreOCR uses Python's logging module for debugging and monitoring. Configure logging via environment variable:
+
+```bash
+# Set log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+export PREOCR_LOG_LEVEL=INFO
+
+# Or in Python
+from preocr.logger import set_log_level
+import logging
+set_log_level(logging.DEBUG)
+```
+
+Default log level is `WARNING`. Set to `INFO` or `DEBUG` for more verbose output during development.
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**1. File type detection fails**
+- Ensure `libmagic` is installed on your system
+- Linux: `sudo apt-get install libmagic1` (Debian/Ubuntu) or `sudo yum install file-devel` (RHEL/CentOS)
+- macOS: `brew install libmagic`
+- Windows: Usually included with `python-magic-bin` package
+
+**2. PDF text extraction returns empty results**
+- Check if PDF is password-protected
+- Verify PDF is not corrupted
+- Try installing both `pdfplumber` and `PyMuPDF` for better compatibility
+
+**3. OpenCV layout analysis not working**
+- Install OpenCV dependencies: `pip install preocr[layout-refinement]`
+- Verify OpenCV is available: `python -c "import cv2; print(cv2.__version__)"`
+
+**4. Low confidence scores**
+- Enable layout-aware analysis: `needs_ocr(file_path, layout_aware=True)`
+- Check file type is supported
+- Review signals in result dictionary for debugging
+
+**5. Performance issues**
+- Most files use fast path (< 150ms)
+- Large PDFs may take longer; consider page-level analysis
+- Disable layout-aware analysis if speed is critical
+
+### Getting Help
+
+- Check existing [Issues](https://github.com/yuvaraj3855/preocr/issues)
+- Enable debug logging: `export PREOCR_LOG_LEVEL=DEBUG`
+- Review signals in result: `result["signals"]` for detailed analysis
+
 ## 🧪 Development
 
 ```bash
@@ -362,11 +415,21 @@ cd preocr
 # Install in development mode
 pip install -e ".[dev]"
 
+# Install pre-commit hooks
+pre-commit install
+
 # Run tests
 pytest
 
 # Run with coverage
 pytest --cov=preocr --cov-report=html
+
+# Run linting
+ruff check preocr/
+black --check preocr/
+
+# Run type checking
+mypy preocr/
 ```
 
 ## 📝 Changelog

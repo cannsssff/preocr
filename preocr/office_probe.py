@@ -1,7 +1,12 @@
 """Office document text extraction (DOCX, PPTX, XLSX)."""
 
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
+
+from .exceptions import OfficeDocumentError, TextExtractionError
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     from docx import Document
@@ -19,7 +24,7 @@ except ImportError:
     load_workbook = None
 
 
-def extract_office_text(file_path: str, mime_type: str) -> Dict[str, any]:
+def extract_office_text(file_path: str, mime_type: str) -> Dict[str, Any]:
     """
     Extract text from Office documents (DOCX, PPTX, XLSX).
     
@@ -49,7 +54,7 @@ def extract_office_text(file_path: str, mime_type: str) -> Dict[str, any]:
         }
 
 
-def _extract_docx(path: Path) -> Dict[str, any]:
+def _extract_docx(path: Path) -> Dict[str, Any]:
     """Extract text from DOCX file."""
     if not Document:
         return {
@@ -81,7 +86,15 @@ def _extract_docx(path: Path) -> Dict[str, any]:
             "text": full_text[:1000] if len(full_text) > 1000 else full_text,
             "document_type": "docx",
         }
-    except Exception:
+    except (IOError, OSError, PermissionError) as e:
+        logger.warning(f"Failed to read DOCX file: {e}")
+        return {
+            "text_length": 0,
+            "text": "",
+            "document_type": "docx",
+        }
+    except Exception as e:
+        logger.warning(f"DOCX text extraction failed: {e}")
         return {
             "text_length": 0,
             "text": "",
@@ -89,7 +102,7 @@ def _extract_docx(path: Path) -> Dict[str, any]:
         }
 
 
-def _extract_pptx(path: Path) -> Dict[str, any]:
+def _extract_pptx(path: Path) -> Dict[str, Any]:
     """Extract text from PPTX file."""
     if not Presentation:
         return {
@@ -115,7 +128,15 @@ def _extract_pptx(path: Path) -> Dict[str, any]:
             "text": full_text[:1000] if len(full_text) > 1000 else full_text,
             "document_type": "pptx",
         }
-    except Exception:
+    except (IOError, OSError, PermissionError) as e:
+        logger.warning(f"Failed to read PPTX file: {e}")
+        return {
+            "text_length": 0,
+            "text": "",
+            "document_type": "pptx",
+        }
+    except Exception as e:
+        logger.warning(f"PPTX text extraction failed: {e}")
         return {
             "text_length": 0,
             "text": "",
@@ -123,7 +144,7 @@ def _extract_pptx(path: Path) -> Dict[str, any]:
         }
 
 
-def _extract_xlsx(path: Path) -> Dict[str, any]:
+def _extract_xlsx(path: Path) -> Dict[str, Any]:
     """Extract text from XLSX file."""
     if not load_workbook:
         return {
@@ -152,7 +173,15 @@ def _extract_xlsx(path: Path) -> Dict[str, any]:
             "text": full_text[:1000] if len(full_text) > 1000 else full_text,
             "document_type": "xlsx",
         }
-    except Exception:
+    except (IOError, OSError, PermissionError) as e:
+        logger.warning(f"Failed to read XLSX file: {e}")
+        return {
+            "text_length": 0,
+            "text": "",
+            "document_type": "xlsx",
+        }
+    except Exception as e:
+        logger.warning(f"XLSX text extraction failed: {e}")
         return {
             "text_length": 0,
             "text": "",

@@ -1,9 +1,14 @@
 """PDF text extraction probe."""
 
+import io
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from .constants import MIN_TEXT_LENGTH
+from .exceptions import PDFProcessingError, TextExtractionError
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     import pdfplumber
@@ -16,7 +21,7 @@ except ImportError:
     fitz = None
 
 
-def extract_pdf_text(file_path: str, page_level: bool = False) -> Dict[str, any]:
+def extract_pdf_text(file_path: str, page_level: bool = False) -> Dict[str, Any]:
     """
     Extract text from PDF file.
     
@@ -40,15 +45,19 @@ def extract_pdf_text(file_path: str, page_level: bool = False) -> Dict[str, any]
     if pdfplumber:
         try:
             return _extract_with_pdfplumber(path, page_level)
-        except Exception:
-            pass
+        except (IOError, OSError, PermissionError) as e:
+            logger.warning(f"Failed to read PDF file with pdfplumber: {e}")
+        except Exception as e:
+            logger.warning(f"PDF text extraction failed with pdfplumber: {e}")
     
     # Fallback to PyMuPDF
     if fitz:
         try:
             return _extract_with_pymupdf(path, page_level)
-        except Exception:
-            pass
+        except (IOError, OSError, PermissionError) as e:
+            logger.warning(f"Failed to read PDF file with PyMuPDF: {e}")
+        except Exception as e:
+            logger.warning(f"PDF text extraction failed with PyMuPDF: {e}")
     
     # No extractors available or both failed
     result = {
@@ -62,26 +71,31 @@ def extract_pdf_text(file_path: str, page_level: bool = False) -> Dict[str, any]
     return result
 
 
-def _extract_with_pdfplumber(path: Path, page_level: bool = False) -> Dict[str, any]:
+def _extract_with_pdfplumber(path: Path, page_level: bool = False) -> Dict[str, Any]:
     """Extract text using pdfplumber."""
     text_parts = []
     page_count = 0
     pages_data = []
     
-    with pdfplumber.open(path) as pdf:
-        page_count = len(pdf.pages)
-        for page_num, page in enumerate(pdf.pages, start=1):
-            page_text = page.extract_text() or ""
-            text_parts.append(page_text)
-            
-            if page_level:
-                page_text_len = len(page_text)
-                pages_data.append({
-                    "page_number": page_num,
-                    "text_length": page_text_len,
-                    "needs_ocr": page_text_len < MIN_TEXT_LENGTH,
-                    "has_text": page_text_len > 0,
-                })
+    try:
+        with pdfplumber.open(path) as pdf:
+            page_count = len(pdf.pages)
+            for page_num, page in enumerate(pdf.pages, start=1):
+                page_text = page.extract_text() or ""
+                text_parts.append(page_text)
+                
+                if page_level:
+                    page_text_len = len(page_text)
+                    pages_data.append({
+                        "page_number": page_num,
+                        "text_length": page_text_len,
+                        "needs_ocr": page_text_len < MIN_TEXT_LENGTH,
+                        "has_text": page_text_len > 0,
+                    })
+    except (IOError, OSError, PermissionError) as e:
+        raise TextExtractionError(f"Failed to read PDF file: {e}") from e
+    except Exception as e:
+        raise TextExtractionError(f"PDF text extraction failed: {e}") from e
     
     full_text = "\n".join(text_parts)
     
@@ -98,28 +112,36 @@ def _extract_with_pdfplumber(path: Path, page_level: bool = False) -> Dict[str, 
     return result
 
 
-def _extract_with_pymupdf(path: Path, page_level: bool = False) -> Dict[str, any]:
+def _extract_with_pymupdf(path: Path, page_level: bool = False) -> Dict[str, Any]:
     """Extract text using PyMuPDF."""
-    doc = fitz.open(path)
+    try:
+        doc = fitz.open(path)
+    except (IOError, OSError, PermissionError) as e:
+        raise TextExtractionError(f"Failed to open PDF file: {e}") from e
+    except Exception as e:
+        raise TextExtractionError(f"PDF processing error: {e}") from e
+    
     text_parts = []
     page_count = len(doc)
     pages_data = []
     
-    for page_num in range(page_count):
-        page = doc[page_num]
-        page_text = page.get_text() or ""
-        text_parts.append(page_text)
-        
-        if page_level:
-            page_text_len = len(page_text)
-            pages_data.append({
-                "page_number": page_num + 1,
-                "text_length": page_text_len,
-                "needs_ocr": page_text_len < MIN_TEXT_LENGTH,
-                "has_text": page_text_len > 0,
-            })
+    try:
+        for page_num in range(page_count):
+            page = doc[page_num]
+            page_text = page.get_text() or ""
+            text_parts.append(page_text)
+            
+            if page_level:
+                page_text_len = len(page_text)
+                pages_data.append({
+                    "page_number": page_num + 1,
+                    "text_length": page_text_len,
+                    "needs_ocr": page_text_len < MIN_TEXT_LENGTH,
+                    "has_text": page_text_len > 0,
+                })
+    finally:
+        doc.close()
     
-    doc.close()
     full_text = "\n".join(text_parts)
     
     result = {

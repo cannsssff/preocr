@@ -3,6 +3,11 @@
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
+from .exceptions import ImageProcessingError
+from .logger import get_logger
+
+logger = get_logger(__name__)
+
 if TYPE_CHECKING:
     from PIL import Image as PILImage
 
@@ -27,7 +32,7 @@ def is_image_file(mime_type: str) -> bool:
     return mime_type.startswith("image/")
 
 
-def analyze_image(file_path: str) -> Dict[str, any]:
+def analyze_image(file_path: str) -> Dict[str, Any]:
     """
     Analyze image file and calculate entropy.
     
@@ -68,7 +73,17 @@ def analyze_image(file_path: str) -> Dict[str, any]:
                 "mode": img.mode,
                 "is_image": True,
             }
-    except Exception:
+    except (IOError, OSError, PermissionError) as e:
+        logger.warning(f"Failed to read image file: {e}")
+        return {
+            "entropy": None,
+            "width": None,
+            "height": None,
+            "mode": None,
+            "is_image": True,
+        }
+    except Exception as e:
+        logger.warning(f"Image processing failed: {e}")
         return {
             "entropy": None,
             "width": None,

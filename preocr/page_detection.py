@@ -1,6 +1,6 @@
 """Page-level detection for multi-page documents."""
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from .constants import MIN_TEXT_LENGTH, ReasonCode
 from .decision import decide
@@ -11,8 +11,8 @@ from .signals import collect_signals
 def analyze_pdf_pages(
     file_path: str,
     file_info: Dict[str, str],
-    pdf_result: Dict[str, any],
-) -> Dict[str, any]:
+    pdf_result: Dict[str, Any],
+) -> Dict[str, Any]:
     """
     Analyze PDF pages individually for page-level OCR detection.
     

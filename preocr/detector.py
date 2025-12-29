@@ -1,7 +1,7 @@
 """Main API for OCR detection."""
 
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 from . import decision
 from . import filetype
@@ -13,13 +13,19 @@ from . import page_detection
 from . import pdf_probe
 from . import signals
 from . import text_probe
+from .cache import get_cached_result, cache_result
 from .constants import LAYOUT_REFINEMENT_THRESHOLD
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def needs_ocr(
     file_path: Union[str, Path],
     page_level: bool = False,
     layout_aware: bool = False,
+    use_cache: bool = False,
+    progress_callback: Optional[Callable[[str, float], None]] = None,
 ) -> Dict[str, Any]:
     """
     Determine if a file needs OCR processing.
@@ -32,6 +38,9 @@ def needs_ocr(
         page_level: If True, return page-level analysis for PDFs (default: False)
         layout_aware: If True, perform layout analysis for PDFs to detect mixed
                      content and improve accuracy (default: False)
+        use_cache: If True, cache results for faster repeated calls (default: False)
+        progress_callback: Optional callback function(current_stage, progress) called
+                          during processing. progress is 0.0-1.0.
         
     Returns:
         Dictionary with keys:
@@ -61,7 +70,26 @@ def needs_ocr(
     if not path.exists():
         raise FileNotFoundError(f"File not found: {file_path}")
     
+    if progress_callback:
+        progress_callback("initializing", 0.0)
+    
+    # Check cache if enabled
+    if use_cache:
+        cached = get_cached_result(str(path))
+        if cached is not None:
+            # Filter cached result based on requested options
+            # Only return cached if it matches requested page_level and layout_aware
+            if cached.get("_cache_page_level") == page_level and cached.get("_cache_layout_aware") == layout_aware:
+                # Remove cache metadata before returning
+                result = {k: v for k, v in cached.items() if not k.startswith("_cache_")}
+                logger.debug(f"Using cached result for {file_path}")
+                if progress_callback:
+                    progress_callback("complete", 1.0)
+                return result
+    
     # Step 1: Detect file type
+    if progress_callback:
+        progress_callback("detecting_file_type", 0.1)
     file_info = filetype.detect_file_type(str(path))
     mime = file_info["mime"]
     
@@ -73,16 +101,22 @@ def needs_ocr(
     
     if mime == "application/pdf":
         # PDF text extraction (with optional page-level analysis)
+        if progress_callback:
+            progress_callback("extracting_pdf_text", 0.3)
         text_result = pdf_probe.extract_pdf_text(str(path), page_level=page_level)
         
         # Perform layout analysis if requested
         if layout_aware:
+            if progress_callback:
+                progress_callback("analyzing_layout", 0.5)
             layout_result = layout_analyzer.analyze_pdf_layout(
                 str(path), page_level=page_level
             )
         
         # Perform page-level analysis if requested
         if page_level and "pages" in text_result:
+            if progress_callback:
+                progress_callback("analyzing_pages", 0.6)
             page_analysis = page_detection.analyze_pdf_pages(
                 str(path), file_info, text_result
             )
@@ -107,6 +141,8 @@ def needs_ocr(
     # Step 5: Confidence check → OpenCV layout refinement (if needed)
     # If confidence is low OR layout_aware is True, use OpenCV to refine the decision
     if mime == "application/pdf" and (layout_aware or confidence < LAYOUT_REFINEMENT_THRESHOLD):
+        if progress_callback:
+            progress_callback("opencv_analysis", 0.7)
         opencv_result = opencv_layout.analyze_with_opencv(str(path), page_level=page_level)
         if opencv_result:
             # Refine decision based on OpenCV analysis
@@ -175,6 +211,18 @@ def needs_ocr(
         }
         if page_level and "pages" in opencv_layout_data:
             result["layout"]["opencv"]["pages"] = opencv_layout_data["pages"]
+    
+    # Cache result if enabled
+    if use_cache:
+        if progress_callback:
+            progress_callback("caching", 0.9)
+        # Add cache metadata
+        result["_cache_page_level"] = page_level
+        result["_cache_layout_aware"] = layout_aware
+        cache_result(str(path), result)
+    
+    if progress_callback:
+        progress_callback("complete", 1.0)
     
     return result
 

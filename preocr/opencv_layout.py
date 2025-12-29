@@ -1,7 +1,12 @@
 """OpenCV-based layout analysis for PDFs (used when confidence is low)."""
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Optional, Any
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+from .exceptions import LayoutAnalysisError
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     import numpy as np
@@ -19,7 +24,7 @@ except ImportError:
     fitz = None
 
 
-def analyze_with_opencv(file_path: str, page_level: bool = False) -> Optional[Dict[str, any]]:
+def analyze_with_opencv(file_path: str, page_level: bool = False) -> Optional[Dict[str, Any]]:
     """
     Analyze PDF layout using OpenCV for text/image region detection.
     
@@ -170,11 +175,15 @@ def analyze_with_opencv(file_path: str, page_level: bool = False) -> Optional[Di
         
         return result
         
-    except Exception:
+    except (IOError, OSError, PermissionError) as e:
+        logger.warning(f"Failed to read PDF file for OpenCV analysis: {e}")
+        return None
+    except Exception as e:
+        logger.warning(f"OpenCV layout analysis failed: {e}")
         return None
 
 
-def _analyze_layout(img: Any) -> Dict[str, any]:
+def _analyze_layout(img: Any) -> Dict[str, Any]:
     """
     Analyze image layout using OpenCV with improved accuracy.
     
@@ -339,6 +348,7 @@ def _contours_overlap(contour1, contour2, overlap_threshold: float = 0.3) -> boo
         
         overlap_ratio = overlap_area / union_area
         return overlap_ratio >= overlap_threshold
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Contour overlap check failed: {e}")
         return False
 

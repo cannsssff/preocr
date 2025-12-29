@@ -1,6 +1,6 @@
 """Decision engine to determine if OCR is needed."""
 
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 
 from .constants import (
     CATEGORY_STRUCTURED,
@@ -15,7 +15,7 @@ from .constants import (
 from .reason_codes import get_reason_description
 
 
-def decide(signals: Dict[str, any]) -> Tuple[bool, str, float, str, str]:
+def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
     """
     Decide if a file needs OCR based on collected signals.
     
@@ -222,8 +222,8 @@ def decide(signals: Dict[str, any]) -> Tuple[bool, str, float, str, str]:
 
 
 def refine_with_opencv(
-    signals: Dict[str, any],
-    opencv_result: Dict[str, any],
+    signals: Dict[str, Any],
+    opencv_result: Dict[str, Any],
     initial_needs_ocr: bool,
     initial_reason: str,
     initial_confidence: float,
