@@ -15,8 +15,8 @@ try:
     from PIL import Image
     import numpy as np
 except ImportError:
-    Image = None  # type: ignore[assignment, misc]
-    np = None  # type: ignore[assignment, misc]
+    Image = None  # type: ignore[assignment]
+    np = None  # type: ignore[assignment]
 
 
 def is_image_file(mime_type: str) -> bool:

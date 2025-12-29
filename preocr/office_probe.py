@@ -11,17 +11,17 @@ logger = get_logger(__name__)
 try:
     from docx import Document
 except ImportError:
-    Document = None  # type: ignore[assignment, misc]
+    Document = None  # type: ignore[assignment]
 
 try:
     from pptx import Presentation
 except ImportError:
-    Presentation = None  # type: ignore[assignment, misc]
+    Presentation = None  # type: ignore[assignment]
 
 try:
     from openpyxl import load_workbook
 except ImportError:
-    load_workbook = None  # type: ignore[assignment, misc]
+    load_workbook = None  # type: ignore[assignment]
 
 
 def extract_office_text(file_path: str, mime_type: str) -> Dict[str, Any]:
