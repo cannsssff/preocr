@@ -15,15 +15,6 @@ except ImportError:
     BeautifulSoup = None  # type: ignore[assignment, misc]
 
 
-def _extract_html_text(path: Path) -> Dict[str, Any]:
-    """Extract text from HTML files."""
-    if BeautifulSoup is None:
-        # Fallback: basic HTML tag removal
-        return _extract_plain_text(path)
-
-    try:
-
-
 def extract_text_from_file(file_path: str, mime_type: str) -> Dict[str, Any]:
     """
     Extract text from plain text files and HTML.
