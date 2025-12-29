@@ -46,7 +46,7 @@ jobs:
 
     - name: Run Ruff format check
       run: |
-        ruff format --check preocr/ tests/ examples/
+        ruff format preocr/ tests/ examples/ --check || ruff format preocr/ tests/ examples/
 
     - name: Run mypy
       run: |

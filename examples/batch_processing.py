@@ -24,7 +24,17 @@ def process_directory(directory: str) -> List[Dict[str, Any]]:
         return results
 
     # Common file extensions to check
-    extensions = [".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".docx", ".pptx", ".xlsx", ".txt"]
+    extensions = [
+        ".pdf",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".tiff",
+        ".docx",
+        ".pptx",
+        ".xlsx",
+        ".txt",
+    ]
 
     files = []
     for ext in extensions:
