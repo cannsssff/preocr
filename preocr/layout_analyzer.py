@@ -91,7 +91,6 @@ def _analyze_with_pdfplumber(path: Path, page_level: bool = False) -> Dict[str, 
 
             # Extract text and calculate text area
             chars = page.chars if hasattr(page, 'chars') else []
-            words = page.words if hasattr(page, 'words') else []
 
             # Calculate text bounding boxes
             text_area = 0.0
