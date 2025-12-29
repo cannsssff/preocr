@@ -9,10 +9,13 @@ from .logger import get_logger
 
 logger = get_logger(__name__)
 
+# Declare BeautifulSoup as Optional[Any] so mypy knows it can be None
+BeautifulSoup: Optional[Any]
 try:
-    from bs4 import BeautifulSoup
+    from bs4 import BeautifulSoup as _BeautifulSoup
+    BeautifulSoup = _BeautifulSoup
 except ImportError:
-    BeautifulSoup = None  # type: ignore[assignment]
+    BeautifulSoup = None
 
 
 def extract_text_from_file(file_path: str, mime_type: str) -> Dict[str, Any]:
@@ -80,9 +83,6 @@ def _extract_html_text(path: Path) -> Dict[str, Any]:
         # Fallback: basic HTML tag removal
         return _extract_plain_text(path)
 
-    # BeautifulSoup is not None here (mypy doesn't narrow after None check)
-    if BeautifulSoup is None:  # type: ignore[unreachable]
-        return _extract_plain_text(path)
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()

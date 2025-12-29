@@ -1,25 +1,33 @@
 """Office document text extraction (DOCX, PPTX, XLSX)."""
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from .exceptions import OfficeDocumentError, TextExtractionError
 from .logger import get_logger
 
 logger = get_logger(__name__)
 
-try:
-    from docx import Document
-except ImportError:
-    Document = None  # type: ignore[assignment]
+# Declare these as Optional[Any] so mypy knows they can be None
+Document: Optional[Any]
+Presentation: Optional[Any]
+load_workbook: Optional[Any]
 
 try:
-    from pptx import Presentation
+    from docx import Document as _Document
+    Document = _Document
 except ImportError:
-    Presentation = None  # type: ignore[assignment]
+    Document = None
 
 try:
-    from openpyxl import load_workbook
+    from pptx import Presentation as _Presentation
+    Presentation = _Presentation
+except ImportError:
+    Presentation = None
+
+try:
+    from openpyxl import load_workbook as _load_workbook
+    load_workbook = _load_workbook
 except ImportError:
     load_workbook = None
 
@@ -56,7 +64,7 @@ def extract_office_text(file_path: str, mime_type: str) -> Dict[str, Any]:
 
 def _extract_docx(path: Path) -> Dict[str, Any]:
     """Extract text from DOCX file."""
-    if Document is None:  # type: ignore[unreachable]
+    if Document is None:
         return {
             "text_length": 0,
             "text": "",
@@ -111,13 +119,6 @@ def _extract_pptx(path: Path) -> Dict[str, Any]:
             "document_type": "pptx",
         }
 
-    # Presentation is not None here (mypy doesn't narrow after None check)
-    if Presentation is None:  # type: ignore[unreachable]
-        return {
-            "text_length": 0,
-            "text": "",
-            "document_type": "pptx",
-        }
     try:
         prs = Presentation(str(path))
         text_parts = []

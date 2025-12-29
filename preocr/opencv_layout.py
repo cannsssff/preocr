@@ -15,8 +15,8 @@ try:
     import cv2
     import numpy as np
 except ImportError:
-    cv2 = None
-    np = None
+    cv2 = None  # type: ignore[assignment]
+    np = None  # type: ignore[assignment]
 
 try:
     import fitz  # PyMuPDF for PDF to image conversion
@@ -221,7 +221,7 @@ def _analyze_layout(img: Any) -> Dict[str, Any]:
 
     # Filter text regions with better criteria
     text_regions = []
-    text_area = 0
+    text_area = 0.0
     min_text_area = max(20, total_area * 0.0001)  # Adaptive minimum area
     max_text_area = total_area * 0.5  # Don't consider huge regions as text
 
@@ -268,7 +268,7 @@ def _analyze_layout(img: Any) -> Dict[str, Any]:
 
     # Filter image regions
     image_regions = []
-    image_area = 0
+    image_area = 0.0
     min_image_area = max(500, total_area * 0.001)  # Adaptive minimum area
 
     for contour in image_contours:
