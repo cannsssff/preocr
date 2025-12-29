@@ -13,7 +13,7 @@ def test_detect_pdf():
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
         f.write(b"%PDF-1.4\n")
         temp_path = f.name
-    
+
     try:
         result = filetype.detect_file_type(temp_path)
         assert result["extension"] == "pdf"
@@ -28,7 +28,7 @@ def test_detect_image():
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
         f.write(b"\x89PNG\r\n\x1a\n")
         temp_path = f.name
-    
+
     try:
         result = filetype.detect_file_type(temp_path)
         assert result["extension"] == "png"
@@ -45,7 +45,7 @@ def test_detect_text():
     with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", delete=False) as f:
         f.write("Hello, world!")
         temp_path = f.name
-    
+
     try:
         result = filetype.detect_file_type(temp_path)
         assert result["extension"] == "txt"
@@ -60,7 +60,7 @@ def test_detect_docx():
     with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as f:
         f.write(b"PK\x03\x04")  # ZIP signature (DOCX is a ZIP file)
         temp_path = f.name
-    
+
     try:
         result = filetype.detect_file_type(temp_path)
         assert result["extension"] == "docx"
@@ -76,7 +76,7 @@ def test_extension_fallback():
     with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
         f.write(b"{}")
         temp_path = f.name
-    
+
     try:
         result = filetype.detect_file_type(temp_path)
         # Should at least have the extension

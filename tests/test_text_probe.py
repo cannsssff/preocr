@@ -14,7 +14,7 @@ def test_extract_plain_text():
     with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", delete=False) as f:
         f.write(content)
         temp_path = f.name
-    
+
     try:
         result = text_probe.extract_text_from_file(temp_path, "text/plain")
         assert result["text_length"] == len(content)
@@ -30,7 +30,7 @@ def test_extract_html():
     with tempfile.NamedTemporaryFile(suffix=".html", mode="w", delete=False) as f:
         f.write(html_content)
         temp_path = f.name
-    
+
     try:
         result = text_probe.extract_text_from_file(temp_path, "text/html")
         assert result["text_length"] > 0
@@ -52,7 +52,7 @@ def test_empty_file():
     """Test handling of empty files."""
     with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", delete=False) as f:
         temp_path = f.name
-    
+
     try:
         result = text_probe.extract_text_from_file(temp_path, "text/plain")
         assert result["text_length"] == 0

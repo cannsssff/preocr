@@ -23,12 +23,13 @@ def test_reason_code_in_result():
     """Test that detector returns reason_code in result."""
     import tempfile
     from pathlib import Path
+
     from preocr import detector
-    
+
     with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", delete=False) as f:
         f.write("Test content")
         temp_path = f.name
-    
+
     try:
         result = detector.needs_ocr(temp_path)
         assert "reason_code" in result

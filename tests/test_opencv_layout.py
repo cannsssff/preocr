@@ -16,7 +16,7 @@ def test_analyze_with_opencv_no_libraries():
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
                 f.write(b"%PDF-1.4\n")
                 temp_path = f.name
-            
+
             try:
                 result = opencv_layout.analyze_with_opencv(temp_path)
                 assert result is None
@@ -29,7 +29,7 @@ def test_analyze_with_opencv_structure():
     # Mock OpenCV and PyMuPDF
     mock_img = MagicMock()
     mock_img.shape = (100, 100)
-    
+
     with patch("preocr.opencv_layout.cv2") as mock_cv2:
         with patch("preocr.opencv_layout.np") as mock_np:
             with patch("preocr.opencv_layout.fitz") as mock_fitz:
@@ -46,12 +46,12 @@ def test_analyze_with_opencv_structure():
                 mock_doc.__getitem__.return_value = mock_page
                 mock_fitz.open.return_value = mock_doc
                 mock_fitz.Matrix.return_value = MagicMock()
-                
+
                 # Mock numpy
                 mock_np.frombuffer.return_value = mock_np.array.return_value
                 mock_np.array.return_value.reshape.return_value = mock_img
                 mock_np.uint8 = int
-                
+
                 # Mock OpenCV
                 mock_cv2.cvtColor.return_value = mock_img
                 mock_cv2.threshold.return_value = (127, mock_img)
@@ -61,14 +61,14 @@ def test_analyze_with_opencv_structure():
                 mock_cv2.Canny.return_value = mock_img
                 mock_cv2.contourArea.return_value = 100
                 mock_cv2.boundingRect.return_value = (0, 0, 10, 10)
-                
+
                 with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
                     f.write(b"%PDF-1.4\n")
                     temp_path = f.name
-                
+
                 try:
                     result = opencv_layout.analyze_with_opencv(temp_path)
-                    
+
                     if result is not None:
                         assert isinstance(result, dict)
                         assert "text_regions" in result
@@ -86,17 +86,17 @@ def test_contours_overlap():
     """Test contour overlap detection."""
     # Skip if cv2 not available
     pytest.importorskip("cv2", reason="OpenCV not available (optional dependency)")
-    
+
     # Mock contours
     contour1 = MagicMock()
     contour2 = MagicMock()
-    
+
     with patch("preocr.opencv_layout.cv2") as mock_cv2:
         mock_cv2.boundingRect.side_effect = [
             (0, 0, 10, 10),  # contour1
             (5, 5, 10, 10),  # contour2 (overlaps)
         ]
-        
+
         result = opencv_layout._contours_overlap(contour1, contour2)
         assert isinstance(result, bool)
 
@@ -106,7 +106,7 @@ def test_contours_overlap_no_cv2():
     with patch("preocr.opencv_layout.cv2", None):
         contour1 = MagicMock()
         contour2 = MagicMock()
-        
+
         result = opencv_layout._contours_overlap(contour1, contour2)
         assert result is False
 
@@ -114,11 +114,11 @@ def test_contours_overlap_no_cv2():
 def test_analyze_layout_structure():
     """Test layout analysis structure."""
     np = pytest.importorskip("numpy", reason="NumPy not available (optional dependency)")
-    
+
     # Create a simple test image
     test_img = np.zeros((100, 100), dtype=np.uint8)
     test_img[10:30, 10:30] = 255  # Some white region
-    
+
     with patch("preocr.opencv_layout.cv2") as mock_cv2:
         mock_cv2.threshold.return_value = (127, test_img)
         mock_cv2.getStructuringElement.return_value = MagicMock()
@@ -127,9 +127,9 @@ def test_analyze_layout_structure():
         mock_cv2.Canny.return_value = test_img
         mock_cv2.contourArea.return_value = 100
         mock_cv2.boundingRect.return_value = (0, 0, 10, 10)
-        
+
         result = opencv_layout._analyze_layout(test_img)
-        
+
         assert isinstance(result, dict)
         assert "text_regions" in result
         assert "image_regions" in result

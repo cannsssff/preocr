@@ -27,11 +27,11 @@ except ImportError:
 def extract_office_text(file_path: str, mime_type: str) -> Dict[str, Any]:
     """
     Extract text from Office documents (DOCX, PPTX, XLSX).
-    
+
     Args:
         file_path: Path to the office document
         mime_type: MIME type of the file
-        
+
     Returns:
         Dictionary with keys:
             - text_length: Number of characters in extracted text
@@ -39,7 +39,7 @@ def extract_office_text(file_path: str, mime_type: str) -> Dict[str, Any]:
             - document_type: Type of document ("docx", "pptx", "xlsx")
     """
     path = Path(file_path)
-    
+
     if "wordprocessingml" in mime_type or path.suffix.lower() == ".docx":
         return _extract_docx(path)
     elif "presentationml" in mime_type or path.suffix.lower() == ".pptx":
@@ -62,25 +62,25 @@ def _extract_docx(path: Path) -> Dict[str, Any]:
             "text": "",
             "document_type": "docx",
         }
-    
+
     try:
         doc = Document(path)
         text_parts = []
-        
+
         # Extract paragraphs
         for paragraph in doc.paragraphs:
             if paragraph.text.strip():
                 text_parts.append(paragraph.text)
-        
+
         # Extract tables
         for table in doc.tables:
             for row in table.rows:
                 for cell in row.cells:
                     if cell.text.strip():
                         text_parts.append(cell.text)
-        
+
         full_text = "\n".join(text_parts)
-        
+
         return {
             "text_length": len(full_text),
             "text": full_text[:1000] if len(full_text) > 1000 else full_text,
@@ -110,19 +110,19 @@ def _extract_pptx(path: Path) -> Dict[str, Any]:
             "text": "",
             "document_type": "pptx",
         }
-    
+
     try:
         prs = Presentation(path)
         text_parts = []
-        
+
         # Extract text from slides
         for slide in prs.slides:
             for shape in slide.shapes:
                 if hasattr(shape, "text") and shape.text.strip():
                     text_parts.append(shape.text)
-        
+
         full_text = "\n".join(text_parts)
-        
+
         return {
             "text_length": len(full_text),
             "text": full_text[:1000] if len(full_text) > 1000 else full_text,
@@ -152,11 +152,11 @@ def _extract_xlsx(path: Path) -> Dict[str, Any]:
             "text": "",
             "document_type": "xlsx",
         }
-    
+
     try:
         wb = load_workbook(path, data_only=True)
         text_parts = []
-        
+
         # Extract text from all sheets
         for sheet_name in wb.sheetnames:
             sheet = wb[sheet_name]
@@ -164,10 +164,10 @@ def _extract_xlsx(path: Path) -> Dict[str, Any]:
                 row_text = " ".join(str(cell) for cell in row if cell is not None)
                 if row_text.strip():
                     text_parts.append(row_text)
-        
+
         wb.close()
         full_text = "\n".join(text_parts)
-        
+
         return {
             "text_length": len(full_text),
             "text": full_text[:1000] if len(full_text) > 1000 else full_text,

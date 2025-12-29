@@ -15,12 +15,12 @@ def analyze_pdf_pages(
 ) -> Dict[str, Any]:
     """
     Analyze PDF pages individually for page-level OCR detection.
-    
+
     Args:
         file_path: Path to the PDF file
         file_info: File type information
         pdf_result: PDF extraction result with page-level data
-        
+
     Returns:
         Dictionary with page-level analysis:
             - overall_needs_ocr: Boolean for entire document
@@ -32,7 +32,7 @@ def analyze_pdf_pages(
         # Fallback to document-level analysis
         signals = collect_signals(file_path, file_info, pdf_result)
         needs_ocr, reason, confidence, category, reason_code = decide(signals)
-        
+
         return {
             "overall_needs_ocr": needs_ocr,
             "overall_confidence": confidence,
@@ -43,18 +43,18 @@ def analyze_pdf_pages(
             "pages_needing_ocr": 1 if needs_ocr else 0,
             "pages_with_text": 1 if not needs_ocr else 0,
         }
-    
+
     pages_data = pdf_result["pages"]
     page_results = []
     pages_needing_ocr = 0
     pages_with_text = 0
     total_confidence = 0.0
-    
+
     for page_info in pages_data:
         page_num = page_info["page_number"]
         page_text_len = page_info["text_length"]
         page_needs_ocr = page_text_len < MIN_TEXT_LENGTH
-        
+
         # Determine page-level reason code
         if page_needs_ocr:
             reason_code = ReasonCode.PDF_PAGE_SCANNED
@@ -64,9 +64,9 @@ def analyze_pdf_pages(
             reason_code = ReasonCode.PDF_PAGE_DIGITAL
             confidence = 0.95
             pages_with_text += 1
-        
+
         total_confidence += confidence
-        
+
         page_results.append({
             "page_number": page_num,
             "needs_ocr": page_needs_ocr,
@@ -75,11 +75,11 @@ def analyze_pdf_pages(
             "reason_code": reason_code,
             "reason": get_reason_description(reason_code),
         })
-    
+
     # Calculate overall document status
     total_pages = len(pages_data)
     overall_needs_ocr = pages_needing_ocr > 0
-    
+
     # Determine overall reason code
     if pages_needing_ocr == 0:
         overall_reason_code = ReasonCode.PDF_DIGITAL
@@ -87,7 +87,7 @@ def analyze_pdf_pages(
         overall_reason_code = ReasonCode.PDF_SCANNED
     else:
         overall_reason_code = ReasonCode.PDF_MIXED
-    
+
     # Calculate overall confidence
     if total_pages > 0:
         overall_confidence = total_confidence / total_pages
@@ -98,7 +98,7 @@ def analyze_pdf_pages(
             overall_confidence = max(overall_confidence - 0.1, 0.0)  # Less confident if mixed
     else:
         overall_confidence = 0.5
-    
+
     return {
         "overall_needs_ocr": overall_needs_ocr,
         "overall_confidence": round(overall_confidence, 2),

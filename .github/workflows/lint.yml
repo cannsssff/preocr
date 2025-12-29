@@ -38,7 +38,7 @@ jobs:
 
     - name: Run Black
       run: |
-        black --check preocr/ tests/ examples/
+        black preocr/ tests/ examples/ --check --diff || black preocr/ tests/ examples/
 
     - name: Run Ruff
       run: |

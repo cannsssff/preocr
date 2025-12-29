@@ -24,13 +24,13 @@ except ImportError:
 def extract_pdf_text(file_path: str, page_level: bool = False) -> Dict[str, Any]:
     """
     Extract text from PDF file.
-    
+
     Tries pdfplumber first (better text extraction), falls back to PyMuPDF.
-    
+
     Args:
         file_path: Path to the PDF file
         page_level: If True, return per-page analysis
-        
+
     Returns:
         Dictionary with keys:
             - text_length: Number of characters in extracted text
@@ -40,7 +40,7 @@ def extract_pdf_text(file_path: str, page_level: bool = False) -> Dict[str, Any]
             - pages: (if page_level=True) List of page-level results
     """
     path = Path(file_path)
-    
+
     # Try pdfplumber first
     if pdfplumber:
         try:
@@ -49,7 +49,7 @@ def extract_pdf_text(file_path: str, page_level: bool = False) -> Dict[str, Any]
             logger.warning(f"Failed to read PDF file with pdfplumber: {e}")
         except Exception as e:
             logger.warning(f"PDF text extraction failed with pdfplumber: {e}")
-    
+
     # Fallback to PyMuPDF
     if fitz:
         try:
@@ -58,7 +58,7 @@ def extract_pdf_text(file_path: str, page_level: bool = False) -> Dict[str, Any]
             logger.warning(f"Failed to read PDF file with PyMuPDF: {e}")
         except Exception as e:
             logger.warning(f"PDF text extraction failed with PyMuPDF: {e}")
-    
+
     # No extractors available or both failed
     result = {
         "text_length": 0,
@@ -76,14 +76,14 @@ def _extract_with_pdfplumber(path: Path, page_level: bool = False) -> Dict[str, 
     text_parts = []
     page_count = 0
     pages_data = []
-    
+
     try:
         with pdfplumber.open(path) as pdf:
             page_count = len(pdf.pages)
             for page_num, page in enumerate(pdf.pages, start=1):
                 page_text = page.extract_text() or ""
                 text_parts.append(page_text)
-                
+
                 if page_level:
                     page_text_len = len(page_text)
                     pages_data.append({
@@ -96,19 +96,19 @@ def _extract_with_pdfplumber(path: Path, page_level: bool = False) -> Dict[str, 
         raise TextExtractionError(f"Failed to read PDF file: {e}") from e
     except Exception as e:
         raise TextExtractionError(f"PDF text extraction failed: {e}") from e
-    
+
     full_text = "\n".join(text_parts)
-    
+
     result = {
         "text_length": len(full_text),
         "text": full_text[:1000] if len(full_text) > 1000 else full_text,
         "page_count": page_count,
         "method": "pdfplumber",
     }
-    
+
     if page_level:
         result["pages"] = pages_data
-    
+
     return result
 
 
@@ -120,17 +120,17 @@ def _extract_with_pymupdf(path: Path, page_level: bool = False) -> Dict[str, Any
         raise TextExtractionError(f"Failed to open PDF file: {e}") from e
     except Exception as e:
         raise TextExtractionError(f"PDF processing error: {e}") from e
-    
+
     text_parts = []
     page_count = len(doc)
     pages_data = []
-    
+
     try:
         for page_num in range(page_count):
             page = doc[page_num]
             page_text = page.get_text() or ""
             text_parts.append(page_text)
-            
+
             if page_level:
                 page_text_len = len(page_text)
                 pages_data.append({
@@ -141,18 +141,18 @@ def _extract_with_pymupdf(path: Path, page_level: bool = False) -> Dict[str, Any
                 })
     finally:
         doc.close()
-    
+
     full_text = "\n".join(text_parts)
-    
+
     result = {
         "text_length": len(full_text),
         "text": full_text[:1000] if len(full_text) > 1000 else full_text,
         "page_count": page_count,
         "method": "pymupdf",
     }
-    
+
     if page_level:
         result["pages"] = pages_data
-    
+
     return result
 

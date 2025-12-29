@@ -27,14 +27,14 @@ except ImportError:
 def analyze_with_opencv(file_path: str, page_level: bool = False) -> Optional[Dict[str, Any]]:
     """
     Analyze PDF layout using OpenCV for text/image region detection.
-    
+
     This is used when initial heuristics have low confidence or layout_aware=True,
     to refine the decision.
-    
+
     Args:
         file_path: Path to the PDF file
         page_level: If True, analyze all pages and return per-page results
-        
+
     Returns:
         Dictionary with layout analysis results:
             - text_regions: Number of detected text regions (overall)
@@ -51,15 +51,15 @@ def analyze_with_opencv(file_path: str, page_level: bool = False) -> Optional[Di
     """
     if not cv2 or not np or not fitz:
         return None
-    
+
     try:
         doc = fitz.open(file_path)
         total_pages = len(doc)
-        
+
         if total_pages == 0:
             doc.close()
             return None
-        
+
         # Analyze multiple pages for better accuracy
         # For small PDFs, analyze all pages; for large ones, sample pages
         if total_pages <= 5:
@@ -72,7 +72,7 @@ def analyze_with_opencv(file_path: str, page_level: bool = False) -> Optional[Di
                 additional = min(2, total_pages - 3)
                 other_pages = [i for i in range(1, total_pages - 1) if i != total_pages // 2]
                 pages_to_analyze.extend(random.sample(other_pages, additional))
-        
+
         overall_text_area = 0.0
         overall_image_area = 0.0
         overall_page_area = 0.0
@@ -81,45 +81,45 @@ def analyze_with_opencv(file_path: str, page_level: bool = False) -> Optional[Di
         total_text_regions = 0
         total_image_regions = 0
         page_layout_data = []
-        
+
         for page_idx in pages_to_analyze:
             if page_idx >= total_pages:
                 continue
-                
+
             page = doc[page_idx]
             pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x zoom for better quality
             img_array = np.frombuffer(pix.samples, dtype=np.uint8)
-            
+
             if pix.n == 1:  # Grayscale
                 img = img_array.reshape(pix.height, pix.width)
             else:
                 img = img_array.reshape(pix.height, pix.width, pix.n)
-            
+
             # Convert to grayscale if needed
             if len(img.shape) == 3:
                 if img.shape[2] == 4:  # RGBA
                     img = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
                 elif img.shape[2] == 3:  # RGB
                     img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-            
+
             # Analyze layout for this page
             page_result = _analyze_layout(img)
-            
+
             page_area = pix.height * pix.width
             page_text_area = (page_result["text_coverage"] / 100.0) * page_area
             page_image_area = (page_result["image_coverage"] / 100.0) * page_area
-            
+
             overall_text_area += page_text_area
             overall_image_area += page_image_area
             overall_page_area += page_area
             total_text_regions += page_result["text_regions"]
             total_image_regions += page_result["image_regions"]
-            
+
             if page_result["has_text_regions"]:
                 overall_has_text = True
             if page_result["has_image_regions"]:
                 overall_has_images = True
-            
+
             if page_level:
                 page_layout_data.append({
                     "page_number": page_idx + 1,
@@ -131,13 +131,13 @@ def analyze_with_opencv(file_path: str, page_level: bool = False) -> Optional[Di
                     "has_image_regions": page_result["has_image_regions"],
                     "layout_complexity": page_result["layout_complexity"],
                 })
-        
+
         doc.close()
-        
+
         # Calculate overall metrics
         overall_text_coverage = (overall_text_area / overall_page_area * 100) if overall_page_area > 0 else 0.0
         overall_image_coverage = (overall_image_area / overall_page_area * 100) if overall_page_area > 0 else 0.0
-        
+
         # Determine overall layout type
         if overall_has_text and not overall_has_images:
             layout_type = "text_only"
@@ -147,7 +147,7 @@ def analyze_with_opencv(file_path: str, page_level: bool = False) -> Optional[Di
             layout_type = "mixed"
         else:
             layout_type = "unknown"
-        
+
         # Determine complexity based on total regions
         total_regions = total_text_regions + total_image_regions
         if total_regions < 10:
@@ -156,7 +156,7 @@ def analyze_with_opencv(file_path: str, page_level: bool = False) -> Optional[Di
             complexity = "moderate"
         else:
             complexity = "complex"
-        
+
         result = {
             "text_regions": total_text_regions,
             "image_regions": total_image_regions,
@@ -169,12 +169,12 @@ def analyze_with_opencv(file_path: str, page_level: bool = False) -> Optional[Di
             "total_pages": total_pages,
             "pages_analyzed": len(pages_to_analyze),
         }
-        
+
         if page_level:
             result["pages"] = page_layout_data
-        
+
         return result
-        
+
     except (IOError, OSError, PermissionError) as e:
         logger.warning(f"Failed to read PDF file for OpenCV analysis: {e}")
         return None
@@ -186,54 +186,54 @@ def analyze_with_opencv(file_path: str, page_level: bool = False) -> Optional[Di
 def _analyze_layout(img: Any) -> Dict[str, Any]:
     """
     Analyze image layout using OpenCV with improved accuracy.
-    
+
     Uses multiple techniques:
     1. Text detection: Morphological operations + aspect ratio filtering
     2. Image detection: Edge density + variance analysis
     3. Better filtering to reduce false positives
-    
+
     Args:
         img: Grayscale image as numpy array
-        
+
     Returns:
         Dictionary with layout analysis results
     """
     height, width = img.shape
     total_area = height * width
-    
+
     # 1. Detect text regions using improved morphological operations
     # Use adaptive thresholding for better text detection
     binary = cv2.adaptiveThreshold(
         img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
     )
-    
+
     # Morphological operations to connect text components
     # Use horizontal kernel to connect characters into words/lines
     kernel_h = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 1))
     kernel_v = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 3))
-    
+
     # Dilate horizontally to connect characters, then vertically to connect lines
     dilated = cv2.dilate(binary, kernel_h, iterations=1)
     dilated = cv2.dilate(dilated, kernel_v, iterations=1)
-    
+
     # Find text contours
     text_contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
+
     # Filter text regions with better criteria
     text_regions = []
     text_area = 0
     min_text_area = max(20, total_area * 0.0001)  # Adaptive minimum area
     max_text_area = total_area * 0.5  # Don't consider huge regions as text
-    
+
     for contour in text_contours:
         area = cv2.contourArea(contour)
         if area < min_text_area or area > max_text_area:
             continue
-        
+
         # Get bounding box to check aspect ratio
         x, y, w, h = cv2.boundingRect(contour)
         aspect_ratio = w / h if h > 0 else 0
-        
+
         # Text typically has reasonable aspect ratios (not too wide or too tall)
         # Allow wider ratios for tables/lists
         if 0.1 < aspect_ratio < 50 and h > 5 and w > 5:
@@ -245,37 +245,37 @@ def _analyze_layout(img: Any) -> Dict[str, Any]:
                 if std_dev > 10:  # Threshold for text-like contrast
                     text_regions.append(contour)
                     text_area += area
-    
+
     # 2. Detect image regions using improved edge detection + variance
     # Images typically have high variance and many edges
     edges = cv2.Canny(img, 30, 100)  # Lower thresholds to catch more edges
-    
+
     # Use variance to identify image regions (images have high variance)
     kernel_size = 15
     kernel = np.ones((kernel_size, kernel_size), np.float32) / (kernel_size * kernel_size)
     mean = cv2.filter2D(img.astype(np.float32), -1, kernel)
     variance = cv2.filter2D((img.astype(np.float32) - mean) ** 2, -1, kernel)
-    
+
     # Combine edge density and variance
     edge_density = cv2.filter2D(edges.astype(np.float32), -1, kernel) / 255.0
     variance_normalized = variance / 255.0
-    
+
     # Regions with high edge density AND high variance are likely images
     image_mask = ((edge_density > 0.1) & (variance_normalized > 50)).astype(np.uint8) * 255
-    
+
     # Find image contours
     image_contours, _ = cv2.findContours(image_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
+
     # Filter image regions
     image_regions = []
     image_area = 0
     min_image_area = max(500, total_area * 0.001)  # Adaptive minimum area
-    
+
     for contour in image_contours:
         area = cv2.contourArea(contour)
         if area < min_image_area:
             continue
-        
+
         # Check if this region overlaps significantly with text regions
         # If so, it's likely not a pure image region
         overlap = False
@@ -283,15 +283,15 @@ def _analyze_layout(img: Any) -> Dict[str, Any]:
             if _contours_overlap(contour, text_contour, overlap_threshold=0.2):
                 overlap = True
                 break
-        
+
         if not overlap:
             image_regions.append(contour)
             image_area += area
-    
+
     # Calculate coverage percentages
     text_coverage = (text_area / total_area * 100) if total_area > 0 else 0.0
     image_coverage = (image_area / total_area * 100) if total_area > 0 else 0.0
-    
+
     # Determine layout complexity
     num_regions = len(text_regions) + len(image_regions)
     if num_regions < 5:
@@ -300,7 +300,7 @@ def _analyze_layout(img: Any) -> Dict[str, Any]:
         complexity = "moderate"
     else:
         complexity = "complex"
-    
+
     return {
         "text_regions": len(text_regions),
         "image_regions": len(image_regions),
@@ -315,37 +315,37 @@ def _analyze_layout(img: Any) -> Dict[str, Any]:
 def _contours_overlap(contour1, contour2, overlap_threshold: float = 0.3) -> bool:
     """
     Check if two contours overlap significantly.
-    
+
     Args:
         contour1: First contour
         contour2: Second contour
         overlap_threshold: Minimum overlap ratio to consider as overlapping
-        
+
     Returns:
         True if contours overlap significantly
     """
     if not cv2:
         return False
-    
+
     try:
         # Get bounding boxes
         x1, y1, w1, h1 = cv2.boundingRect(contour1)
         x2, y2, w2, h2 = cv2.boundingRect(contour2)
-        
+
         # Calculate intersection
         x_overlap = max(0, min(x1 + w1, x2 + w2) - max(x1, x2))
         y_overlap = max(0, min(y1 + h1, y2 + h2) - max(y1, y2))
         overlap_area = x_overlap * y_overlap
-        
+
         # Calculate union
         area1 = w1 * h1
         area2 = w2 * h2
         union_area = area1 + area2 - overlap_area
-        
+
         # Check overlap ratio
         if union_area == 0:
             return False
-        
+
         overlap_ratio = overlap_area / union_area
         return overlap_ratio >= overlap_threshold
     except Exception as e:

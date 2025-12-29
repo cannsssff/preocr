@@ -22,14 +22,14 @@ LAYOUT_REFINEMENT_THRESHOLD = 0.9
 # Reason codes for structured decision tracking
 class ReasonCode:
     """Structured reason codes for OCR detection decisions."""
-    
+
     # No OCR needed
     TEXT_FILE = "TEXT_FILE"
     OFFICE_WITH_TEXT = "OFFICE_WITH_TEXT"
     PDF_DIGITAL = "PDF_DIGITAL"
     STRUCTURED_DATA = "STRUCTURED_DATA"
     HTML_WITH_TEXT = "HTML_WITH_TEXT"
-    
+
     # OCR needed
     IMAGE_FILE = "IMAGE_FILE"
     OFFICE_NO_TEXT = "OFFICE_NO_TEXT"
@@ -37,7 +37,7 @@ class ReasonCode:
     HTML_MINIMAL = "HTML_MINIMAL"
     UNKNOWN_BINARY = "UNKNOWN_BINARY"
     UNRECOGNIZED_TYPE = "UNRECOGNIZED_TYPE"
-    
+
     # Page-level codes
     PDF_PAGE_DIGITAL = "PDF_PAGE_DIGITAL"
     PDF_PAGE_SCANNED = "PDF_PAGE_SCANNED"

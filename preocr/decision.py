@@ -18,10 +18,10 @@ from .reason_codes import get_reason_description
 def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
     """
     Decide if a file needs OCR based on collected signals.
-    
+
     Args:
         signals: Dictionary of signals from signals.collect_signals()
-        
+
     Returns:
         Tuple of:
             - needs_ocr: Boolean indicating if OCR is needed
@@ -34,7 +34,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
     text_length = signals.get("text_length", 0)
     extension = signals.get("extension", "")
     is_binary = signals.get("is_binary", True)
-    
+
     # Rule 1: Plain text formats - NO OCR
     if mime.startswith("text/"):
         return (
@@ -44,7 +44,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
             CATEGORY_STRUCTURED,
             ReasonCode.TEXT_FILE,
         )
-    
+
     # Rule 2: Office documents with text - NO OCR
     if "officedocument" in mime or extension in ["docx", "pptx", "xlsx"]:
         if text_length >= MIN_OFFICE_TEXT_LENGTH:
@@ -63,7 +63,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
                 CATEGORY_UNSTRUCTURED,
                 ReasonCode.OFFICE_NO_TEXT,
             )
-    
+
     # Rule 3: Images - YES OCR (always)
     if mime.startswith("image/"):
         return (
@@ -73,7 +73,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
             CATEGORY_UNSTRUCTURED,
             ReasonCode.IMAGE_FILE,
         )
-    
+
     # Rule 4: PDFs (with optional layout-aware analysis)
     if mime == "application/pdf" or extension == "pdf":
         # Check if layout analysis is available
@@ -82,7 +82,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
         text_coverage = signals.get("text_coverage", 0.0)
         image_coverage = signals.get("image_coverage", 0.0)
         has_images = signals.get("has_images", False)
-        
+
         # Layout-aware decision (if layout analysis was performed)
         if layout_type and layout_type != "unknown":
             # Mixed content: has both text and images
@@ -105,7 +105,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
                         CATEGORY_UNSTRUCTURED,
                         ReasonCode.PDF_MIXED,
                     )
-            
+
             # Image-only layout
             elif layout_type == "image_only":
                 return (
@@ -115,7 +115,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
                     CATEGORY_UNSTRUCTURED,
                     ReasonCode.PDF_SCANNED,
                 )
-            
+
             # Text-only layout
             elif layout_type == "text_only":
                 if text_length >= MIN_TEXT_LENGTH:
@@ -135,7 +135,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
                         CATEGORY_UNSTRUCTURED,
                         ReasonCode.PDF_SCANNED,
                     )
-        
+
         # Fallback to text-length based decision (when layout analysis not available)
         if text_length >= MIN_TEXT_LENGTH:
             # Calculate confidence based on text length (more text = higher confidence)
@@ -144,7 +144,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
             text_ratio = min(text_length / max(file_size / 10, MIN_TEXT_LENGTH), 1.0)
             confidence = 0.85 + (text_ratio * 0.1)  # Range: 0.85 to 0.95
             confidence = min(confidence, HIGH_CONFIDENCE)
-            
+
             return (
                 False,
                 f"{get_reason_description(ReasonCode.PDF_DIGITAL)} ({text_length} chars)",
@@ -163,7 +163,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
                 confidence = 0.60 + (proximity_factor * 0.15)  # Range: 0.60 to 0.75
             else:
                 confidence = 0.65  # Fallback
-            
+
             return (
                 True,
                 f"{get_reason_description(ReasonCode.PDF_SCANNED)} ({text_length} chars)",
@@ -171,7 +171,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
                 CATEGORY_UNSTRUCTURED,
                 ReasonCode.PDF_SCANNED,
             )
-    
+
     # Rule 5: JSON/XML - NO OCR
     if mime in ["application/json", "application/xml"] or extension in ["json", "xml"]:
         return (
@@ -181,7 +181,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
             CATEGORY_STRUCTURED,
             ReasonCode.STRUCTURED_DATA,
         )
-    
+
     # Rule 6: HTML - NO OCR (text can be extracted)
     if mime in ["text/html", "application/xhtml+xml"] or extension in ["html", "htm"]:
         if text_length >= MIN_TEXT_LENGTH:
@@ -200,7 +200,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
                 CATEGORY_UNSTRUCTURED,
                 ReasonCode.HTML_MINIMAL,
             )
-    
+
     # Rule 7: Unknown binaries - YES OCR (conservative default)
     if is_binary:
         return (
@@ -210,7 +210,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
             CATEGORY_UNSTRUCTURED,
             ReasonCode.UNKNOWN_BINARY,
         )
-    
+
     # Fallback: default to needing OCR
     return (
         True,
@@ -232,10 +232,10 @@ def refine_with_opencv(
 ) -> Tuple[bool, str, float, str, str]:
     """
     Refine decision using OpenCV layout analysis results.
-    
+
     This is called when initial heuristics have low confidence (< 0.9).
     Uses OpenCV layout analysis to improve accuracy.
-    
+
     Args:
         signals: Original signals from heuristics
         opencv_result: OpenCV layout analysis results
@@ -244,7 +244,7 @@ def refine_with_opencv(
         initial_confidence: Initial confidence score
         initial_category: Initial category
         initial_reason_code: Initial reason code
-        
+
     Returns:
         Refined decision tuple: (needs_ocr, reason, confidence, category, reason_code)
     """
@@ -255,10 +255,10 @@ def refine_with_opencv(
     has_image_regions = opencv_result.get("has_image_regions", False)
     layout_type = opencv_result.get("layout_type", "unknown")
     layout_complexity = opencv_result.get("layout_complexity", "simple")
-    
+
     # Refinement logic based on OpenCV analysis
     # Use layout_type for more accurate decisions
-    
+
     # Case 1: Text-only layout
     if layout_type == "text_only":
         if text_length >= MIN_TEXT_LENGTH and text_coverage_opencv > 15:
@@ -267,7 +267,7 @@ def refine_with_opencv(
             coverage_factor = min(text_coverage_opencv / 50.0, 1.0)  # Normalize
             confidence = 0.88 + ((text_factor + coverage_factor) / 2 * 0.07)  # Range: 0.88 to 0.95
             confidence = min(confidence, HIGH_CONFIDENCE)
-            
+
             return (
                 False,
                 f"{get_reason_description(ReasonCode.PDF_DIGITAL)} (OpenCV detected text-only layout, {text_length} chars, {text_coverage_opencv:.1f}% coverage)",
@@ -281,7 +281,7 @@ def refine_with_opencv(
             coverage_factor = min(text_coverage_opencv / 30.0, 1.0)  # Normalize to 0-1
             confidence = 0.75 + (coverage_factor * 0.15)  # Range: 0.75 to 0.90
             confidence = min(confidence, HIGH_CONFIDENCE)
-            
+
             return (
                 True,
                 f"{get_reason_description(ReasonCode.PDF_SCANNED)} (OpenCV detected text-only layout but no extractable text, {text_coverage_opencv:.1f}% coverage)",
@@ -289,7 +289,7 @@ def refine_with_opencv(
                 CATEGORY_UNSTRUCTURED,
                 ReasonCode.PDF_SCANNED,
             )
-    
+
     # Case 2: Image-only layout
     elif layout_type == "image_only":
         return (
@@ -299,7 +299,7 @@ def refine_with_opencv(
             CATEGORY_UNSTRUCTURED,
             ReasonCode.PDF_SCANNED,
         )
-    
+
     # Case 3: Mixed content layout
     elif layout_type == "mixed":
         if text_coverage_opencv > 15 and text_length >= MIN_TEXT_LENGTH:
@@ -312,7 +312,7 @@ def refine_with_opencv(
             else:
                 confidence = 0.80
             confidence = min(confidence, HIGH_CONFIDENCE)
-            
+
             return (
                 False,
                 f"{get_reason_description(ReasonCode.PDF_DIGITAL)} (OpenCV detected mixed content, text sufficient, {text_length} chars, {text_coverage_opencv:.1f}% text, {image_coverage_opencv:.1f}% images)",
@@ -326,7 +326,7 @@ def refine_with_opencv(
             image_factor = min(image_coverage_opencv / 50.0, 1.0)
             confidence = 0.75 + (image_factor * 0.10)  # Range: 0.75 to 0.85
             confidence = min(confidence, HIGH_CONFIDENCE)
-            
+
             return (
                 True,
                 f"{get_reason_description(ReasonCode.PDF_MIXED)} (OpenCV detected mixed content, {text_coverage_opencv:.1f}% text, {image_coverage_opencv:.1f}% images)",
@@ -334,7 +334,7 @@ def refine_with_opencv(
                 CATEGORY_UNSTRUCTURED,
                 ReasonCode.PDF_MIXED,
             )
-    
+
     # If OpenCV confirms initial decision, increase confidence
     if (initial_needs_ocr and not has_text_regions) or (not initial_needs_ocr and has_text_regions):
         return (
@@ -344,7 +344,7 @@ def refine_with_opencv(
             initial_category,
             initial_reason_code,
         )
-    
+
     # Default: return refined but keep initial decision
     return (
         initial_needs_ocr,

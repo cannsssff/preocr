@@ -14,7 +14,7 @@ def test_extract_pdf_no_libraries():
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
         f.write(b"Not a real PDF")
         temp_path = f.name
-    
+
     try:
         result = pdf_probe.extract_pdf_text(temp_path)
         # Should return a result dict even if extraction fails
@@ -31,7 +31,7 @@ def test_extract_pdf_structure():
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
         f.write(b"%PDF-1.4\n")
         temp_path = f.name
-    
+
     try:
         result = pdf_probe.extract_pdf_text(temp_path)
         assert isinstance(result, dict)

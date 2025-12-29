@@ -13,10 +13,10 @@ except ImportError:
 def detect_file_type(file_path: str) -> Dict[str, str]:
     """
     Detect file type using MIME detection and extension fallback.
-    
+
     Args:
         file_path: Path to the file to analyze
-        
+
     Returns:
         Dictionary with keys:
             - mime: MIME type string (e.g., "application/pdf")
@@ -25,7 +25,7 @@ def detect_file_type(file_path: str) -> Dict[str, str]:
     """
     path = Path(file_path)
     extension = path.suffix.lower().lstrip(".")
-    
+
     # Try python-magic first (more reliable)
     mime_type = None
     if magic:
@@ -34,25 +34,25 @@ def detect_file_type(file_path: str) -> Dict[str, str]:
         except (OSError, magic.MagicException):
             # Fallback if magic fails
             pass
-    
+
     # Fallback to mimetypes module
     if not mime_type:
         mime_type, _ = mimetypes.guess_type(str(path))
-    
+
     # Final fallback: use extension-based detection
     if not mime_type:
         mime_type = _guess_mime_from_extension(extension)
-    
+
     # Default to application/octet-stream for unknown types
     if not mime_type:
         mime_type = "application/octet-stream"
-    
+
     # Determine if binary (non-text types)
     is_binary = not (
         mime_type.startswith("text/") or
         mime_type in ["application/json", "application/xml"]
     )
-    
+
     return {
         "mime": mime_type,
         "extension": extension,

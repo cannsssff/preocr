@@ -14,7 +14,7 @@ def test_extract_office_structure():
     with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as f:
         f.write(b"PK\x03\x04")  # ZIP signature
         temp_path = f.name
-    
+
     try:
         result = office_probe.extract_office_text(
             temp_path, "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -32,7 +32,7 @@ def test_extract_pptx():
     with tempfile.NamedTemporaryFile(suffix=".pptx", delete=False) as f:
         f.write(b"PK\x03\x04")
         temp_path = f.name
-    
+
     try:
         result = office_probe.extract_office_text(
             temp_path, "application/vnd.openxmlformats-officedocument.presentationml.presentation"
@@ -47,7 +47,7 @@ def test_extract_xlsx():
     with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
         f.write(b"PK\x03\x04")
         temp_path = f.name
-    
+
     try:
         result = office_probe.extract_office_text(
             temp_path, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

@@ -15,10 +15,10 @@ def test_high_confidence_skips_opencv():
     with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as f:
         f.write(b"This is a plain text file with enough content to be considered meaningful.")
         temp_path = f.name
-    
+
     try:
         result = detector.needs_ocr(temp_path)
-        
+
         # Plain text files should have high confidence and skip OpenCV
         assert result["confidence"] >= LAYOUT_REFINEMENT_THRESHOLD
         assert "opencv_layout" not in result.get("signals", {})
@@ -38,12 +38,12 @@ def test_low_confidence_triggers_opencv(mock_opencv):
         "has_text_regions": True,
         "has_image_regions": False,
     }
-    
+
     # Create a PDF that would have low confidence
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
         f.write(b"%PDF-1.4\n")
         temp_path = f.name
-    
+
     try:
         # Mock PDF extraction to return low text (low confidence scenario)
         with patch("preocr.detector.pdf_probe.extract_pdf_text") as mock_pdf:
@@ -53,16 +53,16 @@ def test_low_confidence_triggers_opencv(mock_opencv):
                 "page_count": 1,
                 "method": "mock",
             }
-            
+
             with patch("preocr.detector.filetype.detect_file_type") as mock_detect:
                 mock_detect.return_value = {
                     "mime": "application/pdf",
                     "extension": "pdf",
                     "is_binary": True,
                 }
-                
+
                 result = detector.needs_ocr(temp_path)
-                
+
                 # If confidence was low, OpenCV should have been called
                 # (Note: This depends on the actual confidence calculation)
                 if result["confidence"] < LAYOUT_REFINEMENT_THRESHOLD:
@@ -79,7 +79,7 @@ def test_refine_with_opencv():
         "text_length": 30,  # Low text
         "is_binary": True,
     }
-    
+
     opencv_result = {
         "text_regions": 5,
         "image_regions": 0,
@@ -89,14 +89,14 @@ def test_refine_with_opencv():
         "has_text_regions": True,
         "has_image_regions": False,
     }
-    
+
     # Initial decision (low confidence)
     initial_needs_ocr = True
     initial_reason = "PDF appears to be scanned"
     initial_confidence = 0.6
     initial_category = "unstructured"
     initial_reason_code = "PDF_SCANNED"
-    
+
     # Refine
     needs_ocr, reason, confidence, category, reason_code = decision.refine_with_opencv(
         signals,
@@ -107,14 +107,14 @@ def test_refine_with_opencv():
         initial_category,
         initial_reason_code,
     )
-    
+
     # Check that refinement happened
     assert isinstance(needs_ocr, bool)
     assert isinstance(reason, str)
     assert 0.0 <= confidence <= 1.0
     assert category in ["structured", "unstructured"]
     assert reason_code is not None
-    
+
     # Confidence should be improved (or at least not worse)
     assert confidence >= initial_confidence
 
@@ -127,7 +127,7 @@ def test_refine_with_opencv_mixed_content():
         "text_length": 60,  # Some text
         "is_binary": True,
     }
-    
+
     opencv_result = {
         "text_regions": 3,
         "image_regions": 2,
@@ -137,13 +137,13 @@ def test_refine_with_opencv_mixed_content():
         "has_text_regions": True,
         "has_image_regions": True,
     }
-    
+
     initial_needs_ocr = True
     initial_reason = "PDF appears to be scanned"
     initial_confidence = 0.7
     initial_category = "unstructured"
     initial_reason_code = "PDF_SCANNED"
-    
+
     needs_ocr, reason, confidence, category, reason_code = decision.refine_with_opencv(
         signals,
         opencv_result,
@@ -153,7 +153,7 @@ def test_refine_with_opencv_mixed_content():
         initial_category,
         initial_reason_code,
     )
-    
+
     # Should detect mixed content
     assert isinstance(needs_ocr, bool)
     assert "mixed" in reason.lower() or "OpenCV" in reason

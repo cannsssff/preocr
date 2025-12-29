@@ -19,20 +19,20 @@ _CACHE_EXPIRY_SECONDS = 3600  # 1 hour
 def get_cache_key(file_path: str) -> str:
     """
     Generate a cache key for a file.
-    
+
     Uses file path and modification time to ensure cache invalidation
     when file changes.
-    
+
     Args:
         file_path: Path to the file
-        
+
     Returns:
         Cache key string
     """
     path = Path(file_path)
     if not path.exists():
         return hashlib.md5(str(file_path).encode()).hexdigest()
-    
+
     # Include modification time in key
     mtime = path.stat().st_mtime
     key_string = f"{file_path}:{mtime}"
@@ -42,17 +42,17 @@ def get_cache_key(file_path: str) -> str:
 def get_cache_path(cache_key: str, cache_dir: Optional[Path] = None) -> Path:
     """
     Get cache file path for a cache key.
-    
+
     Args:
         cache_key: Cache key
         cache_dir: Cache directory (default: ~/.preocr/cache)
-        
+
     Returns:
         Path to cache file
     """
     if cache_dir is None:
         cache_dir = _DEFAULT_CACHE_DIR
-    
+
     cache_dir.mkdir(parents=True, exist_ok=True)
     return cache_dir / f"{cache_key}.json"
 
@@ -62,20 +62,20 @@ def get_cached_result(
 ) -> Optional[Dict[str, Any]]:
     """
     Get cached result for a file.
-    
+
     Args:
         file_path: Path to the file
         cache_dir: Cache directory (default: ~/.preocr/cache)
-        
+
     Returns:
         Cached result dictionary or None if not found/expired
     """
     cache_key = get_cache_key(file_path)
     cache_path = get_cache_path(cache_key, cache_dir)
-    
+
     if not cache_path.exists():
         return None
-    
+
     try:
         # Check if cache is expired
         cache_age = time.time() - cache_path.stat().st_mtime
@@ -83,11 +83,11 @@ def get_cached_result(
             logger.debug(f"Cache expired for {file_path}")
             cache_path.unlink()
             return None
-        
+
         # Load cached result
         with open(cache_path, "r") as f:
             result = json.load(f)
-        
+
         logger.debug(f"Cache hit for {file_path}")
         return result
     except (IOError, OSError, json.JSONDecodeError) as e:
@@ -105,7 +105,7 @@ def cache_result(
 ) -> None:
     """
     Cache result for a file.
-    
+
     Args:
         file_path: Path to the file
         result: Result dictionary to cache
@@ -113,7 +113,7 @@ def cache_result(
     """
     cache_key = get_cache_key(file_path)
     cache_path = get_cache_path(cache_key, cache_dir)
-    
+
     try:
         with open(cache_path, "w") as f:
             json.dump(result, f)
@@ -125,19 +125,19 @@ def cache_result(
 def clear_cache(cache_dir: Optional[Path] = None) -> int:
     """
     Clear all cached results.
-    
+
     Args:
         cache_dir: Cache directory (default: ~/.preocr/cache)
-        
+
     Returns:
         Number of cache files removed
     """
     if cache_dir is None:
         cache_dir = _DEFAULT_CACHE_DIR
-    
+
     if not cache_dir.exists():
         return 0
-    
+
     count = 0
     try:
         for cache_file in cache_dir.glob("*.json"):
@@ -146,6 +146,6 @@ def clear_cache(cache_dir: Optional[Path] = None) -> int:
         logger.info(f"Cleared {count} cache files")
     except Exception as e:
         logger.warning(f"Failed to clear cache: {e}")
-    
+
     return count
 

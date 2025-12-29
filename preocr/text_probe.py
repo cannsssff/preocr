@@ -18,11 +18,11 @@ except ImportError:
 def extract_text_from_file(file_path: str, mime_type: str) -> Dict[str, Any]:
     """
     Extract text from plain text files and HTML.
-    
+
     Args:
         file_path: Path to the file
         mime_type: MIME type of the file
-        
+
     Returns:
         Dictionary with keys:
             - text_length: Number of characters in extracted text
@@ -30,7 +30,7 @@ def extract_text_from_file(file_path: str, mime_type: str) -> Dict[str, Any]:
             - encoding: Detected encoding (for text files)
     """
     path = Path(file_path)
-    
+
     if mime_type.startswith("text/html") or mime_type == "application/xhtml+xml":
         return _extract_html_text(path)
     elif mime_type.startswith("text/"):
@@ -44,7 +44,7 @@ def _extract_plain_text(path: Path) -> Dict[str, Any]:
     encodings = ["utf-8", "latin-1", "cp1252", "iso-8859-1"]
     text = ""
     encoding = None
-    
+
     for enc in encodings:
         try:
             with open(path, "r", encoding=enc) as f:
@@ -53,7 +53,7 @@ def _extract_plain_text(path: Path) -> Dict[str, Any]:
                 break
         except (UnicodeDecodeError, UnicodeError):
             continue
-    
+
     if not text:
         # Last resort: try binary read and decode
         try:
@@ -65,7 +65,7 @@ def _extract_plain_text(path: Path) -> Dict[str, Any]:
             logger.warning(f"Failed to read text file: {e}")
         except Exception as e:
             logger.warning(f"Text extraction failed: {e}")
-    
+
     return {
         "text_length": len(text),
         "text": text[:1000] if len(text) > 1000 else text,  # Truncate for large files
@@ -78,18 +78,18 @@ def _extract_html_text(path: Path) -> Dict[str, Any]:
     if not BeautifulSoup:
         # Fallback: basic HTML tag removal
         return _extract_plain_text(path)
-    
+
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
-        
+
         soup = BeautifulSoup(content, "html.parser")
         # Remove script and style elements
         for script in soup(["script", "style"]):
             script.decompose()
-        
+
         text = soup.get_text(separator=" ", strip=True)
-        
+
         return {
             "text_length": len(text),
             "text": text[:1000] if len(text) > 1000 else text,
@@ -108,11 +108,11 @@ def _extract_html_text(path: Path) -> Dict[str, Any]:
 def has_meaningful_text(text: str, min_chars: int = 50) -> bool:
     """
     Check if text has meaningful content.
-    
+
     Args:
         text: Text to check
         min_chars: Minimum number of characters to consider meaningful
-        
+
     Returns:
         True if text has meaningful content, False otherwise
     """

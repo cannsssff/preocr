@@ -13,7 +13,7 @@ def test_plain_text_no_ocr():
         "text_length": 100,
         "is_binary": False,
     }
-    
+
     needs, reason, confidence, category, reason_code = decision.decide(signals)
     assert needs is False
     assert category == "structured"
@@ -29,7 +29,7 @@ def test_image_needs_ocr():
         "text_length": 0,
         "is_binary": True,
     }
-    
+
     needs, reason, confidence, category, reason_code = decision.decide(signals)
     assert needs is True
     assert category == "unstructured"
@@ -45,7 +45,7 @@ def test_pdf_with_text_no_ocr():
         "text_length": 500,
         "is_binary": True,
     }
-    
+
     needs, reason, confidence, category, reason_code = decision.decide(signals)
     assert needs is False
     assert category == "structured"
@@ -60,7 +60,7 @@ def test_pdf_without_text_needs_ocr():
         "text_length": 10,
         "is_binary": True,
     }
-    
+
     needs, reason, confidence, category, reason_code = decision.decide(signals)
     assert needs is True
     assert category == "unstructured"
@@ -75,7 +75,7 @@ def test_office_doc_with_text_no_ocr():
         "text_length": 200,
         "is_binary": True,
     }
-    
+
     needs, reason, confidence, category, reason_code = decision.decide(signals)
     assert needs is False
     assert category == "structured"
@@ -90,7 +90,7 @@ def test_unknown_binary_needs_ocr():
         "text_length": 0,
         "is_binary": True,
     }
-    
+
     needs, reason, confidence, category, reason_code = decision.decide(signals)
     assert needs is True
     assert category == "unstructured"

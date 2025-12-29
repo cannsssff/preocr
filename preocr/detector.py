@@ -29,10 +29,10 @@ def needs_ocr(
 ) -> Dict[str, Any]:
     """
     Determine if a file needs OCR processing.
-    
+
     This is the main API function. It analyzes the file type, extracts text
     where possible, and makes an intelligent decision about whether OCR is needed.
-    
+
     Args:
         file_path: Path to the file to analyze (string or Path object)
         page_level: If True, return page-level analysis for PDFs (default: False)
@@ -41,7 +41,7 @@ def needs_ocr(
         use_cache: If True, cache results for faster repeated calls (default: False)
         progress_callback: Optional callback function(current_stage, progress) called
                           during processing. progress is 0.0-1.0.
-        
+
     Returns:
         Dictionary with keys:
             - needs_ocr: Boolean indicating if OCR is needed
@@ -53,12 +53,12 @@ def needs_ocr(
             - signals: Dictionary of all collected signals (for debugging)
             - pages: (if page_level=True for PDFs) Page-level analysis results
             - layout: (if layout_aware=True for PDFs) Layout analysis results
-            
+
     Example:
         >>> result = needs_ocr("document.pdf")
         >>> if result["needs_ocr"]:
         ...     run_ocr("document.pdf")
-        
+
         >>> # Page-level analysis
         >>> result = needs_ocr("document.pdf", page_level=True)
         >>> for page in result.get("pages", []):
@@ -66,13 +66,13 @@ def needs_ocr(
         ...         print(f"Page {page['page_number']} needs OCR")
     """
     path = Path(file_path)
-    
+
     if not path.exists():
         raise FileNotFoundError(f"File not found: {file_path}")
-    
+
     if progress_callback:
         progress_callback("initializing", 0.0)
-    
+
     # Check cache if enabled
     if use_cache:
         cached = get_cached_result(str(path))
@@ -86,25 +86,25 @@ def needs_ocr(
                 if progress_callback:
                     progress_callback("complete", 1.0)
                 return result
-    
+
     # Step 1: Detect file type
     if progress_callback:
         progress_callback("detecting_file_type", 0.1)
     file_info = filetype.detect_file_type(str(path))
     mime = file_info["mime"]
-    
+
     # Step 2: Extract text based on file type
     text_result = None
     image_result = None
     page_analysis = None
     layout_result = None
-    
+
     if mime == "application/pdf":
         # PDF text extraction (with optional page-level analysis)
         if progress_callback:
             progress_callback("extracting_pdf_text", 0.3)
         text_result = pdf_probe.extract_pdf_text(str(path), page_level=page_level)
-        
+
         # Perform layout analysis if requested
         if layout_aware:
             if progress_callback:
@@ -112,7 +112,7 @@ def needs_ocr(
             layout_result = layout_analyzer.analyze_pdf_layout(
                 str(path), page_level=page_level
             )
-        
+
         # Perform page-level analysis if requested
         if page_level and "pages" in text_result:
             if progress_callback:
@@ -129,15 +129,15 @@ def needs_ocr(
     elif mime.startswith("image/"):
         # Image analysis (no text extraction)
         image_result = image_probe.analyze_image(str(path))
-    
+
     # Step 3: Collect all signals
     collected_signals = signals.collect_signals(
         str(path), file_info, text_result, image_result, layout_result
     )
-    
+
     # Step 4: Make initial decision (heuristics)
     needs_ocr_flag, reason, confidence, category, reason_code = decision.decide(collected_signals)
-    
+
     # Step 5: Confidence check → OpenCV layout refinement (if needed)
     # If confidence is low OR layout_aware is True, use OpenCV to refine the decision
     if mime == "application/pdf" and (layout_aware or confidence < LAYOUT_REFINEMENT_THRESHOLD):
@@ -151,10 +151,10 @@ def needs_ocr(
             )
             # Add OpenCV results to signals for debugging
             collected_signals["opencv_layout"] = opencv_result
-    
+
     # Step 6: Determine file type category for user
     file_type_category = _get_file_type_category(mime, file_info["extension"])
-    
+
     # Build result dictionary
     result = {
         "needs_ocr": needs_ocr_flag,
@@ -165,7 +165,7 @@ def needs_ocr(
         "reason_code": reason_code,
         "signals": collected_signals,
     }
-    
+
     # Add page-level results if available
     if page_analysis and "pages" in page_analysis:
         result["pages"] = page_analysis.get("pages", [])
@@ -178,7 +178,7 @@ def needs_ocr(
             result["confidence"] = page_analysis["overall_confidence"]
             result["reason_code"] = page_analysis["overall_reason_code"]
             result["reason"] = page_analysis["overall_reason"]
-    
+
     # Add layout analysis results if available (from pdfplumber-based analyzer)
     if layout_result:
         result["layout"] = {
@@ -191,7 +191,7 @@ def needs_ocr(
         }
         if page_level and "pages" in layout_result:
             result["layout"]["pages"] = layout_result["pages"]
-    
+
     # Add OpenCV layout results if available (from OpenCV-based analyzer)
     if collected_signals.get("opencv_layout"):
         opencv_layout_data = collected_signals["opencv_layout"]
@@ -211,7 +211,7 @@ def needs_ocr(
         }
         if page_level and "pages" in opencv_layout_data:
             result["layout"]["opencv"]["pages"] = opencv_layout_data["pages"]
-    
+
     # Cache result if enabled
     if use_cache:
         if progress_callback:
@@ -220,10 +220,10 @@ def needs_ocr(
         result["_cache_page_level"] = page_level
         result["_cache_layout_aware"] = layout_aware
         cache_result(str(path), result)
-    
+
     if progress_callback:
         progress_callback("complete", 1.0)
-    
+
     return result
 
 
