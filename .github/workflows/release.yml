@@ -109,6 +109,9 @@ jobs:
   build-and-publish:
     needs: version-validation
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for trusted publishing to PyPI
     steps:
       - uses: actions/checkout@v4
       
@@ -172,16 +175,6 @@ jobs:
           echo "✓ Built package version matches tag: $WHEEL_VERSION"
       
       - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          if [ -z "$TWINE_PASSWORD" ]; then
-            echo "ERROR: PYPI_API_TOKEN secret is not set in GitHub repository settings"
-            echo "Go to: Settings → Secrets and variables → Actions → New repository secret"
-            echo "Name: PYPI_API_TOKEN"
-            exit 1
-          fi
-          twine upload dist/*
+        uses: pypa/gh-action-pypi-publish@release/v1
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
 
