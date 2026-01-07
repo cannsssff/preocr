@@ -1,23 +1,28 @@
 name: Auto Version Bump (PR Mode)
 
+# DISABLED: Replaced by ci-cd-release.yml workflow
+# This workflow is kept for reference but disabled to avoid conflicts
+
 # Alternative workflow that creates a PR instead of direct commit
 # Use this if you prefer to review version bumps before merging
 
 on:
-  push:
-    branches: [ main, develop ]
-    paths-ignore:
-      - '**.md'
-      - '.github/**'
-      - 'CHANGELOG.md'
-      - 'LICENSE'
-  workflow_dispatch:  # Allow manual triggering
+  workflow_dispatch:  # Only allow manual triggering, not automatic
+  # push:
+  #   branches: [ main, develop ]
+  #   paths-ignore:
+  #     - '**.md'
+  #     - '.github/**'
+  #     - 'CHANGELOG.md'
+  #     - 'LICENSE'
 
 jobs:
   bump-version-pr:
     runs-on: ubuntu-latest
+    # Disabled - use ci-cd-release.yml instead
+    if: false  # Always skip this job
     # Only run if not already a version bump commit
-    if: "!contains(github.event.head_commit.message, 'chore: bump version')"
+    # if: "!contains(github.event.head_commit.message, 'chore: bump version')"
     permissions:
       contents: write
       pull-requests: write
