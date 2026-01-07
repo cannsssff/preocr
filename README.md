@@ -32,6 +32,7 @@ Instead of running expensive OCR on everything, PreOCR uses intelligent analysis
 - 📄 **Page-level**: Analyze PDFs page-by-page (v0.2.0+)
 - 🏷️ **Reason codes**: Structured codes for programmatic handling
 - 🎨 **Layout-aware**: Detects mixed content and layout structure (v0.3.0+)
+- 🔄 **Batch processing**: Parallel processing with caching, progress tracking, and resume support
 
 ## 🚀 Quick Start
 
@@ -167,6 +168,80 @@ if result.get("layout"):
 ```
 
 ### Batch Processing
+
+PreOCR provides a powerful `BatchProcessor` class for processing multiple files efficiently with parallel processing, caching, and progress tracking.
+
+#### Basic Batch Processing
+
+```python
+from preocr import BatchProcessor
+
+# Create processor with default settings
+processor = BatchProcessor()
+
+# Process all files in a directory
+results = processor.process_directory("documents/")
+
+# Print summary statistics
+results.print_summary()
+
+# Access individual results
+for result in results.results:
+    if result["needs_ocr"]:
+        print(f"{result['file_path']} needs OCR: {result['reason']}")
+```
+
+#### Advanced Batch Processing
+
+```python
+from preocr import BatchProcessor
+
+# Configure processor with options
+processor = BatchProcessor(
+    max_workers=8,              # Parallel workers (default: CPU count)
+    use_cache=True,              # Enable caching to skip processed files
+    layout_aware=True,           # Perform layout analysis for PDFs
+    page_level=True,             # Enable page-level analysis
+    extensions=["pdf", "png"],   # Filter by file extensions
+    recursive=True,              # Scan subdirectories
+    min_size=1024,               # Minimum file size (bytes)
+    max_size=10*1024*1024,      # Maximum file size (bytes)
+    resume_from="results.json",  # Resume from previous results
+)
+
+# Process directory with progress bar
+results = processor.process_directory("documents/", progress=True)
+
+# Get detailed statistics
+stats = results.get_statistics()
+print(f"Processed: {stats['processed']} files")
+print(f"Needs OCR: {stats['needs_ocr']} ({stats['needs_ocr']/stats['processed']*100:.1f}%)")
+print(f"Processing speed: {stats['files_per_second']:.2f} files/sec")
+
+# Access results by type
+for result in results.results:
+    file_type = result.get("file_type")
+    if result.get("needs_ocr"):
+        # Process with OCR
+        pass
+    else:
+        # Use existing text
+        pass
+```
+
+#### Batch Processing Features
+
+- **Parallel Processing**: Automatically uses all CPU cores for faster processing
+- **Caching**: Skip already-processed files to save time on re-runs
+- **Progress Tracking**: Real-time progress bar with file details (requires `tqdm`)
+- **Resume Support**: Resume from previous results to continue interrupted batches
+- **File Filtering**: Filter by extensions, size, and recursive scanning
+- **Page-Level Analysis**: Get per-page statistics for PDFs
+- **Comprehensive Statistics**: Detailed breakdown by file type, reason codes, and performance metrics
+
+#### Simple Loop Alternative
+
+For simple use cases, you can still use a basic loop:
 
 ```python
 from pathlib import Path
@@ -351,6 +426,51 @@ Dictionary with:
 - `signals` (dict): All collected signals (for debugging)
 - `pages` (list, optional): Page-level results
 - `layout` (dict, optional): Layout analysis results
+
+### `BatchProcessor(max_workers=None, use_cache=True, layout_aware=False, page_level=True, extensions=None, min_size=None, max_size=None, recursive=False, resume_from=None)`
+
+Batch processor for efficiently processing multiple files with parallel processing, caching, and progress tracking.
+
+**Parameters:**
+- `max_workers` (int, optional): Maximum number of parallel workers (default: CPU count)
+- `use_cache` (bool): Enable caching to skip already-processed files (default: `True`)
+- `layout_aware` (bool): Perform layout analysis for PDFs (default: `False`)
+- `page_level` (bool): Perform page-level analysis for PDFs (default: `True`)
+- `extensions` (list, optional): List of file extensions to process (e.g., `["pdf", "png"]`). Default: common document/image formats
+- `min_size` (int, optional): Minimum file size in bytes (default: `None`)
+- `max_size` (int, optional): Maximum file size in bytes (default: `None`)
+- `recursive` (bool): Scan subdirectories recursively (default: `False`)
+- `resume_from` (str, optional): Path to JSON file with previous results to resume from (default: `None`)
+
+**Methods:**
+- `process_directory(directory, progress=True) -> BatchResults`: Process all files in a directory
+
+**Returns:**
+`BatchResults` object with:
+- `results` (list): List of result dictionaries (one per file)
+- `errors` (list): List of error dictionaries for failed files
+- `get_statistics() -> dict`: Get comprehensive statistics about the batch
+- `print_summary()`: Print formatted summary to console
+
+### `BatchResults`
+
+Container for batch processing results with statistics and summary methods.
+
+**Attributes:**
+- `results` (list): List of result dictionaries
+- `errors` (list): List of error dictionaries
+- `total_files` (int): Total number of files found
+- `processed_files` (int): Number of files successfully processed
+- `skipped_files` (int): Number of files skipped (cached/resumed)
+
+**Methods:**
+- `get_statistics() -> dict`: Returns statistics including:
+  - File counts (total, processed, errors, skipped)
+  - OCR decisions (needs_ocr, no_ocr counts and percentages)
+  - Page-level statistics (total pages, pages needing OCR)
+  - Breakdown by file type and reason code
+  - Performance metrics (processing time, files per second)
+- `print_summary()`: Prints a formatted summary to the console
 
 ## 🔧 Configuration
 
