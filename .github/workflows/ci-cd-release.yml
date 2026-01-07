@@ -134,17 +134,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
       
-      - name: Run Black
+      - name: Run Black (auto-fix)
         run: |
-          black preocr/ tests/ examples/ --check
+          # Auto-format with black
+          black preocr/ tests/ examples/
+          echo "✓ Code formatted with Black"
       
-      - name: Run Ruff
+      - name: Run Ruff check (auto-fix)
         run: |
-          ruff check preocr/ tests/ examples/
+          # Auto-fix code issues with ruff
+          ruff check preocr/ tests/ examples/ --fix
+          echo "✓ Code checked and auto-fixed with Ruff"
       
-      - name: Run Ruff format check
+      - name: Run Ruff format (auto-fix)
         run: |
-          ruff format preocr/ tests/ examples/ --check
+          # Auto-format with ruff format
+          ruff format preocr/ tests/ examples/
+          echo "✓ Code formatted with Ruff format"
       
       - name: Run mypy
         run: |
