@@ -5,7 +5,7 @@ import time
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union, cast
 
 from .detector import needs_ocr
 from .logger import get_logger
@@ -284,8 +284,9 @@ class BatchProcessor:
             self.extensions = default_extensions
 
         # Normalize extensions (lowercase, with dot)
-        # At this point, self.extensions is guaranteed to be a List[str]
-        extensions_list: List[str] = self.extensions
+        # At this point, self.extensions is guaranteed to be a List[str] (not None)
+        # Use cast to help mypy understand the type narrowing
+        extensions_list: List[str] = cast(List[str], self.extensions)
         self.extensions = [
             ext.lower() if ext.startswith(".") else f".{ext.lower()}" for ext in extensions_list
         ]
@@ -342,8 +343,8 @@ class BatchProcessor:
             pattern = "*"
 
         # Collect all matching files
-        # self.extensions is guaranteed to be List[str] after __init__
-        extensions_list: List[str] = self.extensions
+        # self.extensions is guaranteed to be List[str] after __init__ (never None)
+        extensions_list: List[str] = cast(List[str], self.extensions)
         for ext in extensions_list:
             # Case-insensitive matching
             files.extend(dir_path.glob(f"{pattern}{ext}"))
