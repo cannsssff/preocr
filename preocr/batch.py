@@ -80,7 +80,7 @@ def _process_single_file(
 class BatchResults:
     """Container for batch processing results."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.results: List[Dict[str, Any]] = []
         self.errors: List[Dict[str, Any]] = []
         self.start_time: Optional[float] = None
@@ -235,7 +235,7 @@ class BatchProcessor:
         max_size: Optional[int] = None,
         recursive: bool = False,
         resume_from: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize batch processor.
 
@@ -265,7 +265,7 @@ class BatchProcessor:
 
         # Default extensions if not specified
         if self.extensions is None:
-            self.extensions = [
+            default_extensions = [
                 ".pdf",
                 ".png",
                 ".jpg",
@@ -281,10 +281,13 @@ class BatchProcessor:
                 ".html",
                 ".htm",
             ]
+            self.extensions = default_extensions
 
         # Normalize extensions (lowercase, with dot)
+        # At this point, self.extensions is guaranteed to be a List[str]
+        extensions_list: List[str] = self.extensions
         self.extensions = [
-            ext.lower() if ext.startswith(".") else f".{ext.lower()}" for ext in self.extensions
+            ext.lower() if ext.startswith(".") else f".{ext.lower()}" for ext in extensions_list
         ]
 
         # Track already processed files for resume
@@ -339,7 +342,9 @@ class BatchProcessor:
             pattern = "*"
 
         # Collect all matching files
-        for ext in self.extensions:
+        # self.extensions is guaranteed to be List[str] after __init__
+        extensions_list: List[str] = self.extensions
+        for ext in extensions_list:
             # Case-insensitive matching
             files.extend(dir_path.glob(f"{pattern}{ext}"))
             files.extend(dir_path.glob(f"{pattern}{ext.upper()}"))
