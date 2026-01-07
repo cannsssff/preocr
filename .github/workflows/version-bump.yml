@@ -16,6 +16,7 @@ jobs:
     if: "!contains(github.event.head_commit.message, 'chore: bump version')"
     permissions:
       contents: write  # Required to push commits
+      pull-requests: write  # Required to create PRs and enable auto-merge
     
     steps:
       - uses: actions/checkout@v4
@@ -56,6 +57,7 @@ jobs:
           echo "✓ Version bumped to ${{ steps.bump.outputs.new_version }}"
       
       - name: Create Pull Request
+        id: create-pr
         if: steps.bump.outputs.should_bump == 'true'
         uses: peter-evans/create-pull-request@v5
         with:
@@ -69,11 +71,17 @@ jobs:
             
             This PR was automatically created by analyzing commit messages since the last tag.
             
-            **Next steps:**
-            1. Review the version bump
-            2. Update CHANGELOG.md if needed
-            3. Merge this PR
-            4. ⚡ **Automatic**: Tag will be created → Release workflow runs → PyPI publish
+            ⚡ **Fully Automatic**: This PR will auto-merge when CI passes → Tag created → PyPI published
           branch: auto-version-bump-${{ steps.bump.outputs.new_version }}
           delete-branch: true
+          labels: automated,version-bump
+      
+      - name: Enable Auto-merge
+        if: steps.bump.outputs.should_bump == 'true' && steps.create-pr.outputs.pull-request-number != ''
+        uses: peter-evans/enable-pull-request-automerge@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.create-pr.outputs.pull-request-number }}
+          merge-method: squash
+          merge-commit-message: "chore: Auto-merge version bump to ${{ steps.bump.outputs.new_version }}"
 
