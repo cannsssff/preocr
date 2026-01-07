@@ -1,0 +1,376 @@
+name: CI/CD Release Pipeline
+
+# This workflow runs when code is merged to main
+# It performs: version bump → lint → test → tag → publish
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+      - 'CHANGELOG.md'
+      - 'LICENSE'
+
+jobs:
+  # Step 1: Version Bump
+  version-bump:
+    runs-on: ubuntu-latest
+    # Skip if this is already a version bump commit
+    if: "!contains(github.event.head_commit.message, 'chore: bump version')"
+    permissions:
+      contents: write  # Required to push commits and tags
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+      should_bump: ${{ steps.bump.outputs.should_bump }}
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for tag comparison
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(python -c "import sys; sys.path.insert(0, '.'); from preocr.version import __version__; print(__version__)")
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+      
+      - name: Check if version bump needed
+        id: bump
+        run: |
+          python bump_version.py --dry-run > bump_output.txt || true
+          cat bump_output.txt
+          
+          # Check if version would change
+          if grep -q "New version:" bump_output.txt; then
+            NEW_VERSION=$(grep "New version:" bump_output.txt | awk '{print $3}')
+            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "should_bump=true" >> $GITHUB_OUTPUT
+            echo "Version bump needed: $NEW_VERSION"
+          else
+            echo "should_bump=false" >> $GITHUB_OUTPUT
+            echo "new_version=${{ steps.current_version.outputs.current_version }}" >> $GITHUB_OUTPUT
+            echo "No version bump needed, keeping current version: ${{ steps.current_version.outputs.current_version }}"
+          fi
+      
+      - name: Bump version
+        if: steps.bump.outputs.should_bump == 'true'
+        run: |
+          python bump_version.py --no-commit
+          NEW_VERSION="${{ steps.bump.outputs.new_version }}"
+          echo "✓ Version bumped to $NEW_VERSION"
+      
+      - name: Commit and push version bump
+        if: steps.bump.outputs.should_bump == 'true'
+        run: |
+          git add preocr/version.py
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }}"
+          git push origin main
+          echo "✓ Pushed version bump to main"
+
+  # Step 2: Linting
+  lint:
+    runs-on: ubuntu-latest
+    needs: version-bump
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libmagic1
+      
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      
+      - name: Run Black
+        run: |
+          black preocr/ tests/ examples/ --check
+      
+      - name: Run Ruff
+        run: |
+          ruff check preocr/ tests/ examples/
+      
+      - name: Run Ruff format check
+        run: |
+          ruff format preocr/ tests/ examples/ --check
+      
+      - name: Run mypy
+        run: |
+          mypy preocr/ --ignore-missing-imports
+
+  # Step 3: Testing
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libmagic1
+      
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      
+      - name: Run tests
+        run: |
+          pytest --cov=preocr --cov-report=term-missing --cov-report=xml
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  # Step 4: Create Tag and Publish
+  tag-and-publish:
+    runs-on: ubuntu-latest
+    needs: [version-bump, lint, test]
+    # Always run - will publish if version was bumped, skip if not
+    permissions:
+      contents: write  # Required to create and push tags
+      id-token: write  # Required for trusted publishing to PyPI
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      
+      - name: Extract version from version.py
+        id: version
+        run: |
+          VERSION=$(python -c "import sys; sys.path.insert(0, '.'); from preocr.version import __version__; print(__version__)")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+      
+      - name: Check if version was bumped
+        id: check_bump
+        run: |
+          if [ "${{ needs.version-bump.outputs.should_bump }}" == "true" ]; then
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+            echo "Version was bumped, will publish"
+          else
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+            echo "No version bump, skipping publish"
+          fi
+      
+      - name: Verify version matches bumped version
+        if: needs.version-bump.outputs.should_bump == 'true'
+        run: |
+          EXPECTED_VERSION="${{ needs.version-bump.outputs.new_version }}"
+          ACTUAL_VERSION="${{ steps.version.outputs.version }}"
+          if [ -z "$EXPECTED_VERSION" ]; then
+            echo "ERROR: Expected version is empty!"
+            exit 1
+          fi
+          if [ "$EXPECTED_VERSION" != "$ACTUAL_VERSION" ]; then
+            echo "ERROR: Version mismatch!"
+            echo "Expected: $EXPECTED_VERSION"
+            echo "Actual: $ACTUAL_VERSION"
+            exit 1
+          fi
+          echo "✓ Version check passed: $ACTUAL_VERSION"
+      
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Tag $TAG already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Tag $TAG does not exist, will create it"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+      
+      - name: Create and push git tag
+        if: steps.check_tag.outputs.exists == 'false' && needs.version-bump.outputs.should_bump == 'true'
+        run: |
+          TAG="${{ steps.check_tag.outputs.tag }}"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+          echo "✓ Created and pushed tag $TAG"
+      
+      - name: Install system dependencies
+        if: needs.version-bump.outputs.should_bump == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libmagic1
+      
+      - name: Install build dependencies
+        if: needs.version-bump.outputs.should_bump == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+      
+      - name: Install test dependencies
+        if: needs.version-bump.outputs.should_bump == 'true'
+        run: |
+          pip install -e ".[dev]"
+      
+      - name: Run final tests before publish
+        if: needs.version-bump.outputs.should_bump == 'true'
+        run: |
+          pytest
+      
+      - name: Build package
+        if: needs.version-bump.outputs.should_bump == 'true'
+        run: |
+          rm -rf dist/ build/ *.egg-info || true
+          python -m build
+          echo "Built packages:"
+          ls -lh dist/
+      
+      - name: Check package
+        if: needs.version-bump.outputs.should_bump == 'true'
+        run: |
+          twine check dist/*
+      
+      - name: Verify built package version
+        if: needs.version-bump.outputs.should_bump == 'true'
+        run: |
+          TAG_VERSION="${{ steps.version.outputs.version }}"
+          # Extract version from built wheel filename
+          WHEEL_FILE=$(ls dist/*.whl 2>/dev/null | head -1)
+          if [ -z "$WHEEL_FILE" ]; then
+            echo "ERROR: No wheel file found in dist/"
+            exit 1
+          fi
+          echo "Wheel file: $WHEEL_FILE"
+          # Extract version from filename: preocr-X.Y.Z-py3-none-any.whl
+          WHEEL_VERSION=$(echo "$WHEEL_FILE" | sed -n 's/.*preocr-\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')
+          echo "Wheel version: $WHEEL_VERSION"
+          echo "Tag version: $TAG_VERSION"
+          if [ "$WHEEL_VERSION" != "$TAG_VERSION" ]; then
+            echo "ERROR: Built package version ($WHEEL_VERSION) doesn't match tag ($TAG_VERSION)"
+            exit 1
+          fi
+          echo "✓ Built package version matches tag: $WHEEL_VERSION"
+      
+      - name: Publish to PyPI
+        if: needs.version-bump.outputs.should_bump == 'true' && steps.check_tag.outputs.exists == 'false'
+        uses: pypa/gh-action-pypi-publish@release/v1
+      
+      - name: Skip publish (no version bump)
+        if: needs.version-bump.outputs.should_bump == 'false'
+        run: |
+          echo "ℹ️ No version bump detected, skipping PyPI publish"
+          echo "To publish, ensure your commits use conventional commits:"
+          echo "  - fix: → patch version"
+          echo "  - feat: → minor version"
+          echo "  - feat!: → major version"
+      
+      - name: Summary - Published
+        if: needs.version-bump.outputs.should_bump == 'true' && steps.check_tag.outputs.exists == 'false'
+        run: |
+          echo "## 🎉 Release Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ steps.check_tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Published to PyPI:** ✅" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Summary - No Publish
+        if: needs.version-bump.outputs.should_bump == 'false'
+        run: |
+          echo "## ✅ CI/CD Complete (No Release)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Current version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** No version bump needed - skipped PyPI publish" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** Use conventional commits to trigger version bump:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`fix:\` → patch version" >> $GITHUB_STEP_SUMMARY
+          echo "- \`feat:\` → minor version" >> $GITHUB_STEP_SUMMARY
+          echo "- \`feat!:\` → major version" >> $GITHUB_STEP_SUMMARY
+
+  # Summary job that always runs
+  summary:
+    runs-on: ubuntu-latest
+    needs: [version-bump, lint, test]
+    if: always()
+    
+    steps:
+      - name: Create summary
+        run: |
+          if [ "${{ needs.version-bump.outputs.should_bump }}" == "true" ]; then
+            echo "## 🎉 CI/CD Pipeline Complete!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Version:** ${{ needs.version-bump.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** ✅ Version bumped, linted, tested, tagged, and published to PyPI" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ✅ CI/CD Pipeline Complete!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Current version:** ${{ needs.version-bump.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** ✅ Linted and tested. No version bump needed." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Lint:** ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tests:** ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+

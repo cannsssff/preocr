@@ -2,6 +2,17 @@
 
 This document explains how the automated release and PyPI publishing process works.
 
+## Quick Start: CI/CD Release Pipeline
+
+**New streamlined workflow:** When you merge code to `main`, the `ci-cd-release.yml` workflow automatically:
+1. ✅ Bumps version (if needed based on conventional commits)
+2. ✅ Runs linting (Black, Ruff, mypy)
+3. ✅ Runs tests (all Python versions)
+4. ✅ Creates git tag with version
+5. ✅ Publishes to PyPI
+
+**No manual steps required!** Just merge to main and the workflow handles everything.
+
 ## Workflow Overview
 
 ```
@@ -166,8 +177,14 @@ git push origin v0.5.0
 
 ## Workflow Files
 
-- **version-bump.yml**: Creates PR with version bump
-- **create-tag-on-version-bump.yml**: Creates tag when PR merged
-- **release.yml**: Validates, builds, and publishes to PyPI
+### Primary Workflow (Recommended)
+- **ci-cd-release.yml**: Complete CI/CD pipeline - version bump → lint → test → tag → publish (runs on merge to main)
+
+### Alternative Workflows
+- **version-bump.yml**: Creates PR with version bump (legacy)
+- **create-tag-on-version-bump.yml**: Creates tag when PR merged (legacy)
+- **release.yml**: Validates, builds, and publishes to PyPI (triggers on tag push)
 - **publish.yml**: Alternative publish workflow (triggers on GitHub release)
+- **test.yml**: Runs tests on push/PR
+- **lint.yml**: Runs linting on push/PR
 
