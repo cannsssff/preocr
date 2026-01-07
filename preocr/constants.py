@@ -19,6 +19,7 @@ LOW_CONFIDENCE = 0.5
 # If initial confidence is below this, use OpenCV for refinement
 LAYOUT_REFINEMENT_THRESHOLD = 0.9
 
+
 # Reason codes for structured decision tracking
 class ReasonCode:
     """Structured reason codes for OCR detection decisions."""
@@ -42,4 +43,3 @@ class ReasonCode:
     PDF_PAGE_DIGITAL = "PDF_PAGE_DIGITAL"
     PDF_PAGE_SCANNED = "PDF_PAGE_SCANNED"
     PDF_MIXED = "PDF_MIXED"
-

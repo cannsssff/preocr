@@ -18,6 +18,7 @@ np: Optional[Any]
 try:
     from PIL import Image as _Image
     import numpy as _np
+
     Image = _Image
     np = _np
 except ImportError:
@@ -157,4 +158,3 @@ def _calculate_entropy(image: Any) -> float:
             if probability > 0:
                 entropy -= probability * (probability.bit_length() - 1)
         return entropy
-

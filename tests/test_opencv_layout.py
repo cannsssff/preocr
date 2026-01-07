@@ -40,7 +40,7 @@ def test_analyze_with_opencv_structure():
                 mock_pix.height = 100
                 mock_pix.width = 100
                 mock_pix.n = 1  # Grayscale
-                mock_pix.samples = b'\x00' * 10000
+                mock_pix.samples = b"\x00" * 10000
                 mock_page.get_pixmap.return_value = mock_pix
                 mock_doc.__len__.return_value = 1
                 mock_doc.__getitem__.return_value = mock_page
@@ -137,4 +137,3 @@ def test_analyze_layout_structure():
         assert "image_coverage" in result
         assert "layout_complexity" in result
         assert result["layout_complexity"] in ["simple", "moderate", "complex"]
-

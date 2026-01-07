@@ -52,10 +52,7 @@ def main():
 
             # Find corresponding layout data
             layout_pages = result["layout"].get("pages", [])
-            layout_page = next(
-                (p for p in layout_pages if p["page_number"] == page_num),
-                None
-            )
+            layout_page = next((p for p in layout_pages if p["page_number"] == page_num), None)
 
             if layout_page:
                 print(f"\n  Page {page_num}:")
@@ -68,4 +65,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

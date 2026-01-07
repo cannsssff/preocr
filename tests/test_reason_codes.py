@@ -37,4 +37,3 @@ def test_reason_code_in_result():
         assert isinstance(result["reason_code"], str)
     finally:
         Path(temp_path).unlink()
-

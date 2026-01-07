@@ -19,6 +19,7 @@ try:
     TQDM_AVAILABLE = True
 except ImportError:
     TQDM_AVAILABLE = False
+
     # Create a dummy tqdm class if not available
     class tqdm:  # type: ignore
         def __init__(self, *args, **kwargs):
@@ -111,7 +112,9 @@ class BatchResults:
         files_with_pages = sum(1 for r in self.results if r.get("page_count", 0) > 0)
 
         # Group by file type
-        by_type: Dict[str, Dict[str, int]] = defaultdict(lambda: {"total": 0, "needs_ocr": 0, "pages": 0, "pages_needing_ocr": 0})
+        by_type: Dict[str, Dict[str, int]] = defaultdict(
+            lambda: {"total": 0, "needs_ocr": 0, "pages": 0, "pages_needing_ocr": 0}
+        )
         for result in self.results:
             file_type = result.get("file_type", "unknown")
             by_type[file_type]["total"] += 1
@@ -145,7 +148,9 @@ class BatchResults:
             "by_reason": dict(by_reason),
             "processing_time": processing_time,
             "files_per_second": (
-                len(self.results) / processing_time if processing_time and processing_time > 0 else None
+                len(self.results) / processing_time
+                if processing_time and processing_time > 0
+                else None
             ),
         }
 
@@ -166,15 +171,23 @@ class BatchResults:
 
         if stats["processed"] > 0:
             print(f"\nOCR Decision:")
-            print(f"  Files needing OCR: {stats['needs_ocr']} ({stats['needs_ocr']/stats['processed']*100:.1f}%)")
-            print(f"  Files ready (no OCR): {stats['no_ocr']} ({stats['no_ocr']/stats['processed']*100:.1f}%)")
-            
+            print(
+                f"  Files needing OCR: {stats['needs_ocr']} ({stats['needs_ocr']/stats['processed']*100:.1f}%)"
+            )
+            print(
+                f"  Files ready (no OCR): {stats['no_ocr']} ({stats['no_ocr']/stats['processed']*100:.1f}%)"
+            )
+
             # Page-level statistics
             if stats.get("total_pages", 0) > 0:
                 print(f"\nPage-Level Statistics:")
                 print(f"  Total pages processed: {stats['total_pages']}")
-                print(f"  Pages needing OCR: {stats['total_pages_needing_ocr']} ({stats['total_pages_needing_ocr']/stats['total_pages']*100:.1f}%)")
-                print(f"  Pages ready (no OCR): {stats['total_pages_with_text']} ({stats['total_pages_with_text']/stats['total_pages']*100:.1f}%)")
+                print(
+                    f"  Pages needing OCR: {stats['total_pages_needing_ocr']} ({stats['total_pages_needing_ocr']/stats['total_pages']*100:.1f}%)"
+                )
+                print(
+                    f"  Pages ready (no OCR): {stats['total_pages_with_text']} ({stats['total_pages_with_text']/stats['total_pages']*100:.1f}%)"
+                )
                 print(f"  Files with pages: {stats['files_with_pages']}")
 
         if stats["processing_time"]:
@@ -441,7 +454,7 @@ class BatchProcessor:
                             # Update progress bar with current file name and page info
                             file_name = Path(file_path).name[:40]
                             status = "✓" if not result.get("error") else "✗"
-                            
+
                             # Show page information if available
                             page_info = ""
                             if result.get("page_count"):
@@ -453,7 +466,7 @@ class BatchProcessor:
                                     if pages_needing_ocr > 0 or pages_with_text > 0:
                                         page_info += f", {pages_needing_ocr} need OCR, {pages_with_text} ready"
                                     page_info += ")"
-                            
+
                             desc = f"Processing [{status}] {file_name}{page_info}"
                             pbar.set_description(desc, refresh=False)
                             pbar.update(1)
@@ -479,8 +492,7 @@ class BatchProcessor:
 
             with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
                 future_to_file = {
-                    executor.submit(_process_single_file, *args): args[0]
-                    for args in process_args
+                    executor.submit(_process_single_file, *args): args[0] for args in process_args
                 }
 
                 for future in as_completed(future_to_file):
@@ -502,4 +514,3 @@ class BatchProcessor:
 
         results.end_time = time.time()
         return results
-

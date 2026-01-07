@@ -39,7 +39,9 @@ def test_extract_html():
 
 def test_has_meaningful_text():
     """Test meaningful text detection."""
-    long_text = "This is a long text with enough characters to pass the minimum threshold of 50 characters."
+    long_text = (
+        "This is a long text with enough characters to pass the minimum threshold of 50 characters."
+    )
     assert text_probe.has_meaningful_text(long_text, 50) is True
     assert text_probe.has_meaningful_text("Short", 50) is False
     assert text_probe.has_meaningful_text("", 50) is False
@@ -56,4 +58,3 @@ def test_empty_file():
         assert result["text_length"] == 0
     finally:
         Path(temp_path).unlink()
-

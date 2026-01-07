@@ -1,6 +1,5 @@
 """Tests for decision engine."""
 
-
 from preocr import decision
 
 
@@ -94,4 +93,3 @@ def test_unknown_binary_needs_ocr():
     assert needs is True
     assert category == "unstructured"
     assert reason_code is not None
-

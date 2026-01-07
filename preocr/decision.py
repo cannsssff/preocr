@@ -81,7 +81,7 @@ def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:
         is_mixed_content = signals.get("is_mixed_content", False)
         text_coverage = signals.get("text_coverage", 0.0)
         image_coverage = signals.get("image_coverage", 0.0)
-        
+
         # Layout-aware decision (if layout analysis was performed)
         if layout_type and layout_type != "unknown":
             # Mixed content: has both text and images
@@ -350,4 +350,3 @@ def refine_with_opencv(
         initial_category,
         initial_reason_code,
     )
-

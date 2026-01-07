@@ -110,4 +110,3 @@ def test_detector_with_page_level():
             assert "pages" in result
     finally:
         Path(temp_path).unlink()
-

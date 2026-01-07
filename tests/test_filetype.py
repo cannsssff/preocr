@@ -82,4 +82,3 @@ def test_extension_fallback():
         assert result["extension"] == "json"
     finally:
         Path(temp_path).unlink()
-

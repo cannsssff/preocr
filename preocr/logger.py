@@ -77,4 +77,3 @@ def set_log_level(level: int) -> None:
     logger.setLevel(level)
     for handler in logger.handlers:
         handler.setLevel(level)
-

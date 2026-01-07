@@ -79,7 +79,10 @@ def needs_ocr(
         if cached is not None:
             # Filter cached result based on requested options
             # Only return cached if it matches requested page_level and layout_aware
-            if cached.get("_cache_page_level") == page_level and cached.get("_cache_layout_aware") == layout_aware:
+            if (
+                cached.get("_cache_page_level") == page_level
+                and cached.get("_cache_layout_aware") == layout_aware
+            ):
                 # Remove cache metadata before returning
                 result = {k: v for k, v in cached.items() if not k.startswith("_cache_")}
                 logger.debug(f"Using cached result for {file_path}")
@@ -110,17 +113,13 @@ def needs_ocr(
         if layout_aware:
             if progress_callback:
                 progress_callback("analyzing_layout", 0.5)
-            layout_result = layout_analyzer.analyze_pdf_layout(
-                str(path), page_level=page_level
-            )
+            layout_result = layout_analyzer.analyze_pdf_layout(str(path), page_level=page_level)
 
         # Perform page-level analysis if requested
         if page_level and "pages" in text_result:
             if progress_callback:
                 progress_callback("analyzing_pages", 0.6)
-            page_analysis = page_detection.analyze_pdf_pages(
-                str(path), file_info, text_result
-            )
+            page_analysis = page_detection.analyze_pdf_pages(str(path), file_info, text_result)
     elif "officedocument" in mime or extension in ["docx", "pptx", "xlsx"]:
         # Office document text extraction
         text_result = office_probe.extract_office_text(str(path), mime)
@@ -148,7 +147,13 @@ def needs_ocr(
         if opencv_result:
             # Refine decision based on OpenCV analysis
             needs_ocr_flag, reason, confidence, category, reason_code = decision.refine_with_opencv(
-                collected_signals, opencv_result, needs_ocr_flag, reason, confidence, category, reason_code
+                collected_signals,
+                opencv_result,
+                needs_ocr_flag,
+                reason,
+                confidence,
+                category,
+                reason_code,
             )
             # Add OpenCV results to signals for debugging
             collected_signals["opencv_layout"] = opencv_result
@@ -242,4 +247,3 @@ def _get_file_type_category(mime: str, extension: str) -> str:
         return "structured"
     else:
         return "unknown"
-

@@ -157,4 +157,3 @@ def test_refine_with_opencv_mixed_content():
     assert isinstance(needs_ocr, bool)
     assert "mixed" in reason.lower() or "OpenCV" in reason
     assert confidence >= initial_confidence
-

@@ -110,4 +110,3 @@ def test_analyze_pdf_layout_no_libraries():
                 assert result["is_mixed_content"] is False
             finally:
                 Path(temp_path).unlink()
-

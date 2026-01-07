@@ -40,4 +40,3 @@ def test_extract_pdf_structure():
         assert "method" in result
     finally:
         Path(temp_path).unlink()
-

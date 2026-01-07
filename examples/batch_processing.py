@@ -153,7 +153,7 @@ Examples:
                 status = "🔍 NEEDS OCR" if result.get("needs_ocr") else "✅ READY"
                 file_name = Path(result["file_path"]).name
                 reason = result.get("reason", "Unknown")
-                
+
                 # Show page information if available
                 page_info = ""
                 if result.get("page_count"):
@@ -162,9 +162,9 @@ Examples:
                     pages_with_text = result.get("pages_with_text", 0)
                     if page_count > 0:
                         page_info = f" | {page_count} pages ({pages_needing_ocr} need OCR, {pages_with_text} ready)"
-                
+
                 print(f"{file_name:40} {status:15} {reason}{page_info}")
-                
+
                 # Show page-level details if available
                 if result.get("pages"):
                     for page in result["pages"][:5]:  # Show first 5 pages

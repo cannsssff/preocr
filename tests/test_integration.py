@@ -130,4 +130,3 @@ def test_integration_unknown_binary():
         assert result["category"] == "unstructured"
     finally:
         Path(temp_path).unlink()
-
