@@ -13,6 +13,7 @@ logger = get_logger(__name__)
 BeautifulSoup: Optional[Any]
 try:
     from bs4 import BeautifulSoup as _BeautifulSoup
+
     BeautifulSoup = _BeautifulSoup
 except ImportError:
     BeautifulSoup = None
@@ -123,4 +124,3 @@ def has_meaningful_text(text: str, min_chars: int = 50) -> bool:
     if not text:
         return False
     return len(text.strip()) >= min_chars
-

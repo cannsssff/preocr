@@ -41,4 +41,3 @@ class ImageProcessingError(PreOCRError):
     """Raised when image processing fails."""
 
     pass
-

@@ -15,18 +15,21 @@ load_workbook: Optional[Any]
 
 try:
     from docx import Document as _Document
+
     Document = _Document
 except ImportError:
     Document = None
 
 try:
     from pptx import Presentation as _Presentation
+
     Presentation = _Presentation
 except ImportError:
     Presentation = None
 
 try:
     from openpyxl import load_workbook as _load_workbook
+
     load_workbook = _load_workbook
 except ImportError:
     load_workbook = None
@@ -122,15 +125,15 @@ def _extract_pptx(path: Path) -> Dict[str, Any]:
     try:
         prs = Presentation(str(path))
         text_parts = []
-        
+
         # Extract text from slides
         for slide in prs.slides:
             for shape in slide.shapes:
                 if hasattr(shape, "text") and shape.text.strip():
                     text_parts.append(shape.text)
-        
+
         full_text = "\n".join(text_parts)
-        
+
         return {
             "text_length": len(full_text),
             "text": full_text[:1000] if len(full_text) > 1000 else full_text,
@@ -195,4 +198,3 @@ def _extract_xlsx(path: Path) -> Dict[str, Any]:
             "text": "",
             "document_type": "xlsx",
         }
-

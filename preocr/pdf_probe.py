@@ -86,12 +86,14 @@ def _extract_with_pdfplumber(path: Path, page_level: bool = False) -> Dict[str, 
 
                 if page_level:
                     page_text_len = len(page_text)
-                    pages_data.append({
-                        "page_number": page_num,
-                        "text_length": page_text_len,
-                        "needs_ocr": page_text_len < MIN_TEXT_LENGTH,
-                        "has_text": page_text_len > 0,
-                    })
+                    pages_data.append(
+                        {
+                            "page_number": page_num,
+                            "text_length": page_text_len,
+                            "needs_ocr": page_text_len < MIN_TEXT_LENGTH,
+                            "has_text": page_text_len > 0,
+                        }
+                    )
     except (IOError, OSError, PermissionError) as e:
         raise TextExtractionError(f"Failed to read PDF file: {e}") from e
     except Exception as e:
@@ -133,12 +135,14 @@ def _extract_with_pymupdf(path: Path, page_level: bool = False) -> Dict[str, Any
 
             if page_level:
                 page_text_len = len(page_text)
-                pages_data.append({
-                    "page_number": page_num + 1,
-                    "text_length": page_text_len,
-                    "needs_ocr": page_text_len < MIN_TEXT_LENGTH,
-                    "has_text": page_text_len > 0,
-                })
+                pages_data.append(
+                    {
+                        "page_number": page_num + 1,
+                        "text_length": page_text_len,
+                        "needs_ocr": page_text_len < MIN_TEXT_LENGTH,
+                        "has_text": page_text_len > 0,
+                    }
+                )
     finally:
         doc.close()
 
@@ -155,4 +159,3 @@ def _extract_with_pymupdf(path: Path, page_level: bool = False) -> Dict[str, Any
         result["pages"] = pages_data
 
     return result
-

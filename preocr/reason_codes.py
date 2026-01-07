@@ -10,7 +10,6 @@ REASON_DESCRIPTIONS = {
     ReasonCode.PDF_DIGITAL: "Digital PDF with extractable text",
     ReasonCode.STRUCTURED_DATA: "Structured data file (JSON/XML)",
     ReasonCode.HTML_WITH_TEXT: "HTML file with sufficient text content",
-
     # OCR needed
     ReasonCode.IMAGE_FILE: "Image file (no text extraction possible)",
     ReasonCode.OFFICE_NO_TEXT: "Office document with insufficient text",
@@ -18,7 +17,6 @@ REASON_DESCRIPTIONS = {
     ReasonCode.HTML_MINIMAL: "HTML file with minimal content",
     ReasonCode.UNKNOWN_BINARY: "Unknown binary file type",
     ReasonCode.UNRECOGNIZED_TYPE: "Unrecognized file type",
-
     # Page-level codes
     ReasonCode.PDF_PAGE_DIGITAL: "PDF page contains extractable text",
     ReasonCode.PDF_PAGE_SCANNED: "PDF page appears to be scanned",
@@ -29,4 +27,3 @@ REASON_DESCRIPTIONS = {
 def get_reason_description(code: str) -> str:
     """Get human-readable description for a reason code."""
     return REASON_DESCRIPTIONS.get(code, f"Unknown reason code: {code}")
-

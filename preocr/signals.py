@@ -68,4 +68,3 @@ def collect_signals(
         signals_dict["text_density"] = layout_result.get("text_density", 0.0)
 
     return signals_dict
-

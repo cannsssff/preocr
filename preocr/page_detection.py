@@ -68,14 +68,16 @@ def analyze_pdf_pages(
 
         total_confidence += confidence
 
-        page_results.append({
-            "page_number": page_num,
-            "needs_ocr": page_needs_ocr,
-            "text_length": page_text_len,
-            "confidence": confidence,
-            "reason_code": reason_code,
-            "reason": get_reason_description(reason_code),
-        })
+        page_results.append(
+            {
+                "page_number": page_num,
+                "needs_ocr": page_needs_ocr,
+                "text_length": page_text_len,
+                "confidence": confidence,
+                "reason_code": reason_code,
+                "reason": get_reason_description(reason_code),
+            }
+        )
 
     # Calculate overall document status
     total_pages = len(pages_data)
@@ -110,4 +112,3 @@ def analyze_pdf_pages(
         "pages_needing_ocr": pages_needing_ocr,
         "pages_with_text": pages_with_text,
     }
-

@@ -47,4 +47,3 @@ def test_collect_signals_with_image():
         assert result["has_text"] is False
     finally:
         Path(temp_path).unlink()
-

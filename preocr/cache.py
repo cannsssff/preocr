@@ -57,9 +57,7 @@ def get_cache_path(cache_key: str, cache_dir: Optional[Path] = None) -> Path:
     return cache_dir / f"{cache_key}.json"
 
 
-def get_cached_result(
-    file_path: str, cache_dir: Optional[Path] = None
-) -> Optional[Dict[str, Any]]:
+def get_cached_result(file_path: str, cache_dir: Optional[Path] = None) -> Optional[Dict[str, Any]]:
     """
     Get cached result for a file.
 
@@ -100,9 +98,7 @@ def get_cached_result(
         return None
 
 
-def cache_result(
-    file_path: str, result: Dict[str, Any], cache_dir: Optional[Path] = None
-) -> None:
+def cache_result(file_path: str, result: Dict[str, Any], cache_dir: Optional[Path] = None) -> None:
     """
     Cache result for a file.
 
@@ -148,4 +144,3 @@ def clear_cache(cache_dir: Optional[Path] = None) -> int:
         logger.warning(f"Failed to clear cache: {e}")
 
     return count
-

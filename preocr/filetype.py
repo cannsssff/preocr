@@ -57,8 +57,7 @@ def detect_file_type(file_path: str) -> FileTypeInfo:
 
     # Determine if binary (non-text types)
     is_binary = not (
-        mime_type.startswith("text/") or
-        mime_type in ["application/json", "application/xml"]
+        mime_type.startswith("text/") or mime_type in ["application/json", "application/xml"]
     )
 
     return {
@@ -95,4 +94,3 @@ def _guess_mime_from_extension(extension: str) -> Optional[str]:
         "eml": "message/rfc822",
     }
     return extension_map.get(extension.lower())
-

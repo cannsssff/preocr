@@ -15,6 +15,7 @@ np: Optional[Any]
 try:
     import cv2 as _cv2
     import numpy as _np
+
     cv2 = _cv2
     np = _np
 except ImportError:
@@ -72,6 +73,7 @@ def analyze_with_opencv(file_path: str, page_level: bool = False) -> Optional[Di
             pages_to_analyze = [0, total_pages // 2, total_pages - 1]
             if total_pages > 3:
                 import random
+
                 additional = min(2, total_pages - 3)
                 other_pages = [i for i in range(1, total_pages - 1) if i != total_pages // 2]
                 pages_to_analyze.extend(random.sample(other_pages, additional))
@@ -125,22 +127,28 @@ def analyze_with_opencv(file_path: str, page_level: bool = False) -> Optional[Di
                 overall_has_images = True
 
             if page_level:
-                page_layout_data.append({
-                    "page_number": page_idx + 1,
-                    "text_coverage": page_result["text_coverage"],
-                    "image_coverage": page_result["image_coverage"],
-                    "text_regions": page_result["text_regions"],
-                    "image_regions": page_result["image_regions"],
-                    "has_text_regions": page_result["has_text_regions"],
-                    "has_image_regions": page_result["has_image_regions"],
-                    "layout_complexity": page_result["layout_complexity"],
-                })
+                page_layout_data.append(
+                    {
+                        "page_number": page_idx + 1,
+                        "text_coverage": page_result["text_coverage"],
+                        "image_coverage": page_result["image_coverage"],
+                        "text_regions": page_result["text_regions"],
+                        "image_regions": page_result["image_regions"],
+                        "has_text_regions": page_result["has_text_regions"],
+                        "has_image_regions": page_result["has_image_regions"],
+                        "layout_complexity": page_result["layout_complexity"],
+                    }
+                )
 
         doc.close()
 
         # Calculate overall metrics
-        overall_text_coverage = (overall_text_area / overall_page_area * 100) if overall_page_area > 0 else 0.0
-        overall_image_coverage = (overall_image_area / overall_page_area * 100) if overall_page_area > 0 else 0.0
+        overall_text_coverage = (
+            (overall_text_area / overall_page_area * 100) if overall_page_area > 0 else 0.0
+        )
+        overall_image_coverage = (
+            (overall_image_area / overall_page_area * 100) if overall_page_area > 0 else 0.0
+        )
 
         # Determine overall layout type
         if overall_has_text and not overall_has_images:
@@ -208,7 +216,7 @@ def _analyze_layout(img: Any, cv2_module: Any = None, np_module: Any = None) -> 
     # Cast to Any to tell mypy these are not None (guaranteed by caller)
     _cv2: Any = cast(Any, cv2_module if cv2_module is not None else cv2)
     _np: Any = cast(Any, np_module if np_module is not None else np)
-    
+
     height, width = img.shape
     total_area = height * width
 
@@ -249,7 +257,7 @@ def _analyze_layout(img: Any, cv2_module: Any = None, np_module: Any = None) -> 
         # Allow wider ratios for tables/lists
         if 0.1 < aspect_ratio < 50 and h > 5 and w > 5:
             # Check if region has text-like characteristics (high contrast)
-            roi = img[y:y+h, x:x+w] if y+h <= height and x+w <= width else None
+            roi = img[y : y + h, x : x + w] if y + h <= height and x + w <= width else None
             if roi is not None and roi.size > 0:
                 std_dev = _np.std(roi)
                 # Text regions typically have moderate to high contrast
@@ -362,4 +370,3 @@ def _contours_overlap(contour1, contour2, overlap_threshold: float = 0.3) -> boo
     except Exception as e:
         logger.debug(f"Contour overlap check failed: {e}")
         return False
-

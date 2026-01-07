@@ -54,4 +54,3 @@ def test_extract_xlsx():
         assert result["document_type"] == "xlsx"
     finally:
         Path(temp_path).unlink()
-

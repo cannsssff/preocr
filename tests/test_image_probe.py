@@ -55,4 +55,3 @@ def test_analyze_invalid_image():
         assert result["is_image"] is True
     finally:
         Path(temp_path).unlink()
-
