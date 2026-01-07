@@ -73,7 +73,7 @@ jobs:
             1. Review the version bump
             2. Update CHANGELOG.md if needed
             3. Merge this PR
-            4. The tag will be created automatically when merged (via release workflow)
+            4. ⚡ **Automatic**: Tag will be created → Release workflow runs → PyPI publish
           branch: auto-version-bump-${{ steps.bump.outputs.new_version }}
           delete-branch: true
 
