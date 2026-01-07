@@ -1,121 +1,194 @@
-"""Batch processing example for PreOCR."""
+"""Enhanced batch processing example for PreOCR."""
 
+import sys
 from pathlib import Path
-from typing import List, Dict, Any
 
-from preocr import needs_ocr
-
-
-def process_directory(directory: str) -> List[Dict[str, Any]]:
-    """
-    Process all files in a directory and determine OCR needs.
-
-    Args:
-        directory: Path to directory containing files
-
-    Returns:
-        List of results for each file
-    """
-    results = []
-    dir_path = Path(directory)
-
-    if not dir_path.exists():
-        print(f"Directory not found: {directory}")
-        return results
-
-    # Common file extensions to check
-    extensions = [
-        ".pdf",
-        ".png",
-        ".jpg",
-        ".jpeg",
-        ".tiff",
-        ".docx",
-        ".pptx",
-        ".xlsx",
-        ".txt",
-    ]
-
-    files = []
-    for ext in extensions:
-        files.extend(dir_path.glob(f"*{ext}"))
-        files.extend(dir_path.glob(f"*{ext.upper()}"))
-
-    print(f"Found {len(files)} files to process\n")
-
-    for file_path in files:
-        try:
-            result = needs_ocr(str(file_path))
-            result["file_path"] = str(file_path)
-            results.append(result)
-        except Exception as e:
-            print(f"Error processing {file_path}: {e}")
-
-    return results
-
-
-def print_summary(results: List[Dict[str, Any]]):
-    """Print a summary of processing results."""
-    total = len(results)
-    needs_ocr_count = sum(1 for r in results if r["needs_ocr"])
-    no_ocr_count = total - needs_ocr_count
-
-    print("\n" + "=" * 60)
-    print("BATCH PROCESSING SUMMARY")
-    print("=" * 60)
-    print(f"Total files processed: {total}")
-    print(f"Files needing OCR: {needs_ocr_count} ({needs_ocr_count/total*100:.1f}%)")
-    print(f"Files ready (no OCR): {no_ocr_count} ({no_ocr_count/total*100:.1f}%)")
-    print("\n" + "-" * 60)
-
-    # Group by file type
-    by_type = {}
-    for result in results:
-        file_type = result["file_type"]
-        if file_type not in by_type:
-            by_type[file_type] = {"total": 0, "needs_ocr": 0}
-        by_type[file_type]["total"] += 1
-        if result["needs_ocr"]:
-            by_type[file_type]["needs_ocr"] += 1
-
-    print("\nBreakdown by file type:")
-    for file_type, stats in sorted(by_type.items()):
-        pct = stats["needs_ocr"] / stats["total"] * 100
-        print(f"  {file_type:12} {stats['total']:3} files, {stats['needs_ocr']:2} need OCR ({pct:5.1f}%)")
-
-    print("\n" + "=" * 60)
+from preocr.batch import BatchProcessor
 
 
 def main():
     """Main function for batch processing example."""
-    import sys
+    import argparse
 
-    if len(sys.argv) > 1:
-        directory = sys.argv[1]
-    else:
-        directory = "."  # Current directory
+    parser = argparse.ArgumentParser(
+        description="Batch process files to determine OCR needs using PreOCR",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Process current directory
+  python batch_processing.py
 
-    print("PreOCR - Batch Processing Example")
-    print(f"Processing directory: {directory}\n")
+  # Process specific directory
+  python batch_processing.py /path/to/documents
 
-    results = process_directory(directory)
+  # Process with 8 workers and layout analysis
+  python batch_processing.py /path/to/documents --workers 8 --layout-aware
 
-    if results:
-        print_summary(results)
+  # Process only PDFs recursively
+  python batch_processing.py /path/to/documents --extensions pdf --recursive
 
-        # Show detailed results
-        print("\nDetailed Results:")
-        print("-" * 60)
-        for result in results[:10]:  # Show first 10
-            status = "🔍 NEEDS OCR" if result["needs_ocr"] else "✅ READY"
-            print(f"{Path(result['file_path']).name:30} {status:15} {result['reason']}")
+  # Resume from previous results
+  python batch_processing.py /path/to/documents --resume-from results.json
+        """,
+    )
 
-        if len(results) > 10:
-            print(f"\n... and {len(results) - 10} more files")
-    else:
-        print("No files found to process.")
+    parser.add_argument(
+        "directory",
+        nargs="?",
+        default=".",
+        help="Directory to process (default: current directory)",
+    )
+
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=None,
+        help="Number of parallel workers (default: CPU count)",
+    )
+
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Disable caching (reprocess all files)",
+    )
+
+    parser.add_argument(
+        "--layout-aware",
+        action="store_true",
+        help="Perform layout analysis for PDFs (slower but more accurate)",
+    )
+
+    parser.add_argument(
+        "--page-level",
+        action="store_true",
+        help="Perform page-level analysis for PDFs",
+    )
+
+    parser.add_argument(
+        "--extensions",
+        nargs="+",
+        default=None,
+        help="File extensions to process (e.g., pdf png jpg). Default: common formats",
+    )
+
+    parser.add_argument(
+        "--recursive",
+        action="store_true",
+        help="Scan subdirectories recursively",
+    )
+
+    parser.add_argument(
+        "--min-size",
+        type=int,
+        default=None,
+        help="Minimum file size in bytes",
+    )
+
+    parser.add_argument(
+        "--max-size",
+        type=int,
+        default=None,
+        help="Maximum file size in bytes",
+    )
+
+    parser.add_argument(
+        "--resume-from",
+        type=str,
+        default=None,
+        help="Resume from previous results file (JSON)",
+    )
+
+    parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="Disable progress bar",
+    )
+
+    args = parser.parse_args()
+
+    print("PreOCR - Enhanced Batch Processing")
+    print("=" * 80)
+    print(f"Directory: {args.directory}")
+    print(f"Workers: {args.workers or 'auto (CPU count)'}")
+    print(f"Caching: {not args.no_cache}")
+    print(f"Layout-aware: {args.layout_aware}")
+    print(f"Page-level: {args.page_level}")
+    print(f"Recursive: {args.recursive}")
+    if args.extensions:
+        print(f"Extensions: {', '.join(args.extensions)}")
+    if args.min_size:
+        print(f"Min size: {args.min_size:,} bytes")
+    if args.max_size:
+        print(f"Max size: {args.max_size:,} bytes")
+    if args.resume_from:
+        print(f"Resume from: {args.resume_from}")
+    print("=" * 80)
+    print()
+
+    try:
+        # Create processor
+        processor = BatchProcessor(
+            max_workers=args.workers,
+            use_cache=not args.no_cache,
+            layout_aware=args.layout_aware,
+            page_level=args.page_level,
+            extensions=args.extensions,
+            min_size=args.min_size,
+            max_size=args.max_size,
+            recursive=args.recursive,
+            resume_from=args.resume_from,
+        )
+
+        # Process directory
+        results = processor.process_directory(args.directory, progress=not args.no_progress)
+
+        # Print summary
+        results.print_summary()
+
+        # Show detailed results (first 10)
+        if results.results:
+            print("\nDetailed Results (first 10):")
+            print("-" * 80)
+            for result in results.results[:10]:
+                status = "🔍 NEEDS OCR" if result.get("needs_ocr") else "✅ READY"
+                file_name = Path(result["file_path"]).name
+                reason = result.get("reason", "Unknown")
+                
+                # Show page information if available
+                page_info = ""
+                if result.get("page_count"):
+                    page_count = result.get("page_count", 0)
+                    pages_needing_ocr = result.get("pages_needing_ocr", 0)
+                    pages_with_text = result.get("pages_with_text", 0)
+                    if page_count > 0:
+                        page_info = f" | {page_count} pages ({pages_needing_ocr} need OCR, {pages_with_text} ready)"
+                
+                print(f"{file_name:40} {status:15} {reason}{page_info}")
+                
+                # Show page-level details if available
+                if result.get("pages"):
+                    for page in result["pages"][:5]:  # Show first 5 pages
+                        page_num = page.get("page_number", 0)
+                        page_needs_ocr = page.get("needs_ocr", False)
+                        page_status = "🔍 NEEDS OCR" if page_needs_ocr else "✅ READY"
+                        page_reason = page.get("reason", "Unknown")
+                        print(f"  └─ Page {page_num:3}: {page_status:15} {page_reason}")
+                    if len(result["pages"]) > 5:
+                        print(f"  └─ ... and {len(result['pages']) - 5} more pages")
+
+            if len(results.results) > 10:
+                print(f"\n... and {len(results.results) - 10} more files")
+
+    except KeyboardInterrupt:
+        print("\n\nProcessing interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\nError: {e}")
+        import traceback
+
+        traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == "__main__":
     main()
-

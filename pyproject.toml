@@ -66,6 +66,9 @@ layout-refinement = [
     "opencv-python-headless>=4.8.0",
     "numpy>=1.24.0",
 ]
+batch = [
+    "tqdm>=4.65.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/yuvaraj3855/preocr"
