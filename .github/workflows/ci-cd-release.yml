@@ -350,6 +350,8 @@ jobs:
       - name: Publish to PyPI
         if: needs.version-bump.outputs.should_bump == 'true' && steps.check_tag.outputs.exists == 'false'
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
       
       - name: Skip publish (no version bump)
         if: needs.version-bump.outputs.should_bump == 'false'
