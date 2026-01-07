@@ -8,7 +8,8 @@ on:
     branches: [main]
     paths-ignore:
       - '**.md'
-      - '.github/**'
+      - '.github/workflows/RELEASE_WORKFLOW.md'
+      - '.github/PYPI_SETUP.md'
       - 'CHANGELOG.md'
       - 'LICENSE'
 
@@ -50,7 +51,9 @@ jobs:
       - name: Check if version bump needed
         id: bump
         run: |
-          python bump_version.py --dry-run > bump_output.txt || true
+          set +e  # Don't exit on error
+          python bump_version.py --dry-run > bump_output.txt 2>&1
+          EXIT_CODE=$?
           cat bump_output.txt
           
           # Check if version would change
@@ -59,11 +62,28 @@ jobs:
             echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
             echo "should_bump=true" >> $GITHUB_OUTPUT
             echo "Version bump needed: $NEW_VERSION"
+          elif grep -q "No commits found since last tag" bump_output.txt; then
+            echo "should_bump=false" >> $GITHUB_OUTPUT
+            echo "new_version=${{ steps.current_version.outputs.current_version }}" >> $GITHUB_OUTPUT
+            echo "No commits found since last tag - no version bump needed"
+          elif [ $EXIT_CODE -eq 0 ] && grep -q "Detected bump type:" bump_output.txt; then
+            # Script ran successfully and detected a bump type
+            NEW_VERSION=$(grep "New version:" bump_output.txt | awk '{print $3}' || echo "")
+            if [ -n "$NEW_VERSION" ]; then
+              echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+              echo "should_bump=true" >> $GITHUB_OUTPUT
+              echo "Version bump needed: $NEW_VERSION"
+            else
+              echo "should_bump=false" >> $GITHUB_OUTPUT
+              echo "new_version=${{ steps.current_version.outputs.current_version }}" >> $GITHUB_OUTPUT
+              echo "No version bump needed"
+            fi
           else
             echo "should_bump=false" >> $GITHUB_OUTPUT
             echo "new_version=${{ steps.current_version.outputs.current_version }}" >> $GITHUB_OUTPUT
             echo "No version bump needed, keeping current version: ${{ steps.current_version.outputs.current_version }}"
           fi
+          set -e  # Re-enable exit on error
       
       - name: Bump version
         if: steps.bump.outputs.should_bump == 'true'
@@ -84,6 +104,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     needs: version-bump
+    if: always()  # Always run, even if version-bump fails
     
     steps:
       - uses: actions/checkout@v4
@@ -132,7 +153,8 @@ jobs:
   # Step 3: Testing
   test:
     runs-on: ubuntu-latest
-    needs: lint
+    needs: [version-bump, lint]
+    if: always() && (needs.version-bump.result == 'success' || needs.version-bump.result == 'failure') && needs.lint.result == 'success'
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
@@ -181,7 +203,11 @@ jobs:
   tag-and-publish:
     runs-on: ubuntu-latest
     needs: [version-bump, lint, test]
-    # Always run - will publish if version was bumped, skip if not
+    # Only run if lint and test succeeded, and version was bumped
+    if: |
+      needs.lint.result == 'success' &&
+      needs.test.result == 'success' &&
+      needs.version-bump.outputs.should_bump == 'true'
     permissions:
       contents: write  # Required to create and push tags
       id-token: write  # Required for trusted publishing to PyPI
