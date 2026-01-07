@@ -48,23 +48,32 @@ jobs:
             echo "should_bump=false" >> $GITHUB_OUTPUT
           fi
       
-      - name: Bump version and commit
+      - name: Bump version
         if: steps.bump.outputs.should_bump == 'true'
         run: |
-          # Bump version (creates commit automatically)
-          python bump_version.py
+          # Bump version (without committing, we'll commit in PR step)
+          python bump_version.py --no-commit
           echo "✓ Version bumped to ${{ steps.bump.outputs.new_version }}"
       
-      - name: Push version bump commit
+      - name: Create Pull Request
         if: steps.bump.outputs.should_bump == 'true'
-        run: |
-          git push
-          echo "✓ Pushed version bump commit to ${{ github.ref }}"
-      
-      - name: Create git tag
-        if: steps.bump.outputs.should_bump == 'true'
-        run: |
-          git tag -a "v${{ steps.bump.outputs.new_version }}" -m "Release v${{ steps.bump.outputs.new_version }}"
-          git push origin "v${{ steps.bump.outputs.new_version }}"
-          echo "✓ Created and pushed tag v${{ steps.bump.outputs.new_version }}"
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: bump version to ${{ steps.bump.outputs.new_version }}"
+          title: "chore: Auto-bump version to ${{ steps.bump.outputs.new_version }}"
+          body: |
+            🤖 Automated version bump based on conventional commits.
+            
+            **New version:** `${{ steps.bump.outputs.new_version }}`
+            
+            This PR was automatically created by analyzing commit messages since the last tag.
+            
+            **Next steps:**
+            1. Review the version bump
+            2. Update CHANGELOG.md if needed
+            3. Merge this PR
+            4. The tag will be created automatically when merged (via release workflow)
+          branch: auto-version-bump-${{ steps.bump.outputs.new_version }}
+          delete-branch: true
 
