@@ -32,13 +32,15 @@ Instead of running expensive OCR on everything, PreOCR uses intelligent analysis
 - 📄 **Page-level**: Analyze PDFs page-by-page (v0.2.0+)
 - 🏷️ **Reason codes**: Structured codes for programmatic handling
 - 🎨 **Layout-aware**: Detects mixed content and layout structure (v0.3.0+)
-- 🔄 **Batch processing**: Parallel processing with caching, progress tracking, and resume support
+- 🔄 **Batch processing** 🆕: Process thousands of files in parallel with automatic caching, progress tracking, and resume support (v0.5.0+)
 
 ## 🚀 Quick Start
 
 ```bash
 pip install preocr
 ```
+
+### Single File Detection
 
 ```python
 from preocr import needs_ocr
@@ -51,6 +53,26 @@ if result["needs_ocr"]:
     # Run your OCR here (e.g., MinerU)
 else:
     print(f"Already readable: {result['reason']}")
+```
+
+### Batch Processing (New in v0.5.0)
+
+Process thousands of files efficiently with parallel processing:
+
+```python
+from preocr import BatchProcessor
+
+# Process entire directory with automatic parallelization
+processor = BatchProcessor(max_workers=8)
+results = processor.process_directory("documents/")
+
+# Get comprehensive statistics
+results.print_summary()
+
+# Access results
+for result in results.results:
+    if result["needs_ocr"]:
+        print(f"{result['file_path']} needs OCR")
 ```
 
 ## 📊 How It Works
@@ -557,6 +579,15 @@ mypy preocr/
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ### Recent Updates
+
+**v0.5.0** - Batch Processing with Parallel Execution 🆕
+- **BatchProcessor** class for processing thousands of files efficiently
+- Parallel processing with automatic worker management
+- Built-in caching to skip already-processed files
+- Progress tracking with detailed statistics
+- Resume support for interrupted batches
+- File filtering (extensions, size, recursive scanning)
+- Comprehensive statistics and reporting
 
 **v0.3.0** - Hybrid Pipeline with OpenCV Refinement
 - Adaptive pipeline: fast heuristics + OpenCV for edge cases
