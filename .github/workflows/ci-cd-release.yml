@@ -229,15 +229,20 @@ jobs:
   tag-and-publish:
     runs-on: ubuntu-latest
     needs: [version-bump, lint, test]
-    # Only run if lint and test succeeded, and version was bumped
+    # Only run if lint and test succeeded, version was bumped, and version-bump job actually ran
+    # Skip if [no bump] or [skip ci] is in commit message, or if version-bump job was skipped
     if: |
       needs.lint.result == 'success' &&
       needs.test.result == 'success' &&
+      needs.version-bump.result != 'skipped' &&
       needs.version-bump.outputs.should_bump == 'true' &&
       !contains(github.event.head_commit.message, '[skip ci]') &&
       !contains(github.event.head_commit.message, '[ci skip]') &&
       !contains(github.event.head_commit.message, '[skip actions]') &&
-      !contains(github.event.head_commit.message, '[actions skip]')
+      !contains(github.event.head_commit.message, '[actions skip]') &&
+      !contains(github.event.head_commit.message, '[no bump]') &&
+      !contains(github.event.head_commit.message, '[skip version]') &&
+      !contains(github.event.head_commit.message, '[no version]')
     permissions:
       contents: write  # Required to create and push tags
       id-token: write  # Required for trusted publishing to PyPI
