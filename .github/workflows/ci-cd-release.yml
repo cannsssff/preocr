@@ -175,7 +175,6 @@ jobs:
     needs: [version-bump, lint]
     if: |
       always() &&
-      (needs.version-bump.result == 'success' || needs.version-bump.result == 'failure') &&
       needs.lint.result == 'success' &&
       !contains(github.event.head_commit.message, '[skip ci]') &&
       !contains(github.event.head_commit.message, '[ci skip]') &&
