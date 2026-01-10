@@ -17,8 +17,16 @@ jobs:
   # Step 1: Version Bump
   version-bump:
     runs-on: ubuntu-latest
-    # Skip if this is already a version bump commit
-    if: "!contains(github.event.head_commit.message, 'chore: bump version')"
+    # Skip if this is already a version bump commit, [skip ci], or [no bump] is in the message
+    if: |
+      !contains(github.event.head_commit.message, 'chore: bump version') &&
+      !contains(github.event.head_commit.message, '[skip ci]') &&
+      !contains(github.event.head_commit.message, '[ci skip]') &&
+      !contains(github.event.head_commit.message, '[skip actions]') &&
+      !contains(github.event.head_commit.message, '[actions skip]') &&
+      !contains(github.event.head_commit.message, '[no bump]') &&
+      !contains(github.event.head_commit.message, '[skip version]') &&
+      !contains(github.event.head_commit.message, '[no version]')
     permissions:
       contents: write  # Required to push commits and tags
     outputs:
@@ -104,7 +112,12 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     needs: version-bump
-    if: always()  # Always run, even if version-bump fails
+    if: |
+      always() &&
+      !contains(github.event.head_commit.message, '[skip ci]') &&
+      !contains(github.event.head_commit.message, '[ci skip]') &&
+      !contains(github.event.head_commit.message, '[skip actions]') &&
+      !contains(github.event.head_commit.message, '[actions skip]')
     
     steps:
       - uses: actions/checkout@v4
@@ -160,7 +173,14 @@ jobs:
   test:
     runs-on: ubuntu-latest
     needs: [version-bump, lint]
-    if: always() && (needs.version-bump.result == 'success' || needs.version-bump.result == 'failure') && needs.lint.result == 'success'
+    if: |
+      always() &&
+      (needs.version-bump.result == 'success' || needs.version-bump.result == 'failure') &&
+      needs.lint.result == 'success' &&
+      !contains(github.event.head_commit.message, '[skip ci]') &&
+      !contains(github.event.head_commit.message, '[ci skip]') &&
+      !contains(github.event.head_commit.message, '[skip actions]') &&
+      !contains(github.event.head_commit.message, '[actions skip]')
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
@@ -213,7 +233,11 @@ jobs:
     if: |
       needs.lint.result == 'success' &&
       needs.test.result == 'success' &&
-      needs.version-bump.outputs.should_bump == 'true'
+      needs.version-bump.outputs.should_bump == 'true' &&
+      !contains(github.event.head_commit.message, '[skip ci]') &&
+      !contains(github.event.head_commit.message, '[ci skip]') &&
+      !contains(github.event.head_commit.message, '[skip actions]') &&
+      !contains(github.event.head_commit.message, '[actions skip]')
     permissions:
       contents: write  # Required to create and push tags
       id-token: write  # Required for trusted publishing to PyPI
@@ -270,6 +294,14 @@ jobs:
           fi
           echo "✓ Version check passed: $ACTUAL_VERSION"
       
+      - name: Fetch latest refs
+        if: needs.version-bump.outputs.should_bump == 'true'
+        run: |
+          git fetch origin main --tags
+          git checkout main
+          git pull origin main
+          echo "✓ Fetched latest changes from main"
+      
       - name: Check if tag already exists
         id: check_tag
         run: |
@@ -287,9 +319,48 @@ jobs:
         if: steps.check_tag.outputs.exists == 'false' && needs.version-bump.outputs.should_bump == 'true'
         run: |
           TAG="${{ steps.check_tag.outputs.tag }}"
+          # Ensure we're on the latest commit
+          git checkout main
+          git pull origin main
+          # Verify we're on the right commit with the version bump
+          CURRENT_COMMIT=$(git rev-parse HEAD)
+          echo "Current commit: $CURRENT_COMMIT"
+          echo "Current commit message:"
+          git log -1 --pretty=format:"%s"
+          # Verify version in the code matches what we expect
+          CODE_VERSION=$(python -c "import sys; sys.path.insert(0, '.'); from preocr.version import __version__; print(__version__)")
+          EXPECTED_VERSION="${{ steps.version.outputs.version }}"
+          if [ "$CODE_VERSION" != "$EXPECTED_VERSION" ]; then
+            echo "ERROR: Version mismatch before tagging!"
+            echo "Expected: $EXPECTED_VERSION"
+            echo "Actual in code: $CODE_VERSION"
+            exit 1
+          fi
+          # Create annotated tag on current HEAD
           git tag -a "$TAG" -m "Release $TAG"
+          # Verify tag was created
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "✓ Tag $TAG created successfully"
+            git show "$TAG" --no-patch
+          else
+            echo "ERROR: Tag creation failed!"
+            exit 1
+          fi
+          # Push the tag
           git push origin "$TAG"
           echo "✓ Created and pushed tag $TAG"
+      
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.exists == 'false' && needs.version-bump.outputs.should_bump == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.check_tag.outputs.tag }}
+          name: Release ${{ steps.check_tag.outputs.tag }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Install system dependencies
         if: needs.version-bump.outputs.should_bump == 'true'

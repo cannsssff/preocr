@@ -103,8 +103,13 @@ def analyze_commits(commits: list[str]) -> Tuple[str, list[str]]:
     fix_pattern = re.compile(r"^fix:", re.IGNORECASE)
     
     for commit in commits:
-        # Skip merge commits and version bumps
-        if commit.startswith("Merge ") or "version" in commit.lower() or "bump" in commit.lower():
+        # Skip merge commits, version bumps, and commits marked to skip version bump
+        if (commit.startswith("Merge ") or 
+            "version" in commit.lower() or 
+            "bump" in commit.lower() or
+            "[no bump]" in commit.lower() or
+            "[skip version]" in commit.lower() or
+            "[no version]" in commit.lower()):
             continue
         
         relevant_commits.append(commit)
