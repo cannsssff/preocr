@@ -58,10 +58,44 @@ jobs:
         if: steps.check_tag.outputs.exists == 'false'
         run: |
           TAG="${{ steps.check_tag.outputs.tag }}"
+          # Ensure we're on the merged commit
+          git checkout main
+          git pull origin main
+          # Verify version in code matches tag
+          CODE_VERSION="${{ steps.version.outputs.version }}"
+          TAG_VERSION="${TAG#v}"
+          if [ "$CODE_VERSION" != "$TAG_VERSION" ]; then
+            echo "ERROR: Version mismatch!"
+            echo "Code version: $CODE_VERSION"
+            echo "Tag version: $TAG_VERSION"
+            exit 1
+          fi
+          # Create annotated tag on current HEAD
           git tag -a "$TAG" -m "Release $TAG"
+          # Verify tag was created
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "✓ Tag $TAG created successfully"
+            git show "$TAG" --no-patch
+          else
+            echo "ERROR: Tag creation failed!"
+            exit 1
+          fi
+          # Push the tag
           git push origin "$TAG"
           echo "✓ Created and pushed tag $TAG"
           echo "This will trigger the release workflow to publish to PyPI"
+      
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.check_tag.outputs.tag }}
+          name: Release ${{ steps.check_tag.outputs.tag }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Tag already exists
         if: steps.check_tag.outputs.exists == 'true'
