@@ -3,8 +3,11 @@
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from .exceptions import OfficeDocumentError, TextExtractionError
-from .logger import get_logger
+from .. import exceptions
+from ..utils.logger import get_logger
+
+OfficeDocumentError = exceptions.OfficeDocumentError
+TextExtractionError = exceptions.TextExtractionError
 
 logger = get_logger(__name__)
 

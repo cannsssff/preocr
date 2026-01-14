@@ -3,8 +3,10 @@
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from .exceptions import ImageProcessingError
-from .logger import get_logger
+from .. import exceptions
+from ..utils.logger import get_logger
+
+ImageProcessingError = exceptions.ImageProcessingError
 
 logger = get_logger(__name__)
 

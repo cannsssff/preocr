@@ -1,13 +1,12 @@
 """Enhanced batch processing for PreOCR with parallel processing, caching, and progress tracking."""
 
-import os
 import time
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
 
-from .detector import needs_ocr
+from ..core.detector import needs_ocr
 from .logger import get_logger
 
 logger = get_logger(__name__)

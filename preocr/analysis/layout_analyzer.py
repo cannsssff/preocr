@@ -3,8 +3,10 @@
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from .exceptions import LayoutAnalysisError
-from .logger import get_logger
+from .. import exceptions
+from ..utils.logger import get_logger
+
+LayoutAnalysisError = exceptions.LayoutAnalysisError
 
 logger = get_logger(__name__)
 

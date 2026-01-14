@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
-from .filetype import FileTypeInfo
+from ..utils.filetype import FileTypeInfo
 
 
 def collect_signals(

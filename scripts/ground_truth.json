@@ -1,0 +1,137 @@
+[
+  {
+    "file": "../../Downloads/1.pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/ORTHO case 1.pdf",
+    "needs_ocr": true,
+    "notes": "PDF without extractable text (likely scanned) - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Sal-Slip-95041-Sep.pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Salary_slip_Dec.pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Salary_slip_Nov.pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Salary_slip_Oct.pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/TestPyPI-Recovery-Codes-heykick-2025-12-28T17_03_28.075165.txt",
+    "needs_ocr": false,
+    "notes": "Text file - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj-Kannan.pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Cv (1).pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Cv (10).pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Cv (11).pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Cv (12).pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Cv (13).pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Cv (2).pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Cv (3).pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Cv (4).pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Cv (5).pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Cv (6).pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Cv (7).pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Cv (8).pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Cv (9).pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Cv.pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/Yuvaraj_Kannan.pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/dummy-pdf_2.pdf",
+    "needs_ocr": true,
+    "notes": "PDF without extractable text (likely scanned) - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/kushali (1).pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/kushali.pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  },
+  {
+    "file": "../../Downloads/sample-local-pdf.pdf",
+    "needs_ocr": false,
+    "notes": "PDF with extractable text - auto-labeled"
+  }
+]

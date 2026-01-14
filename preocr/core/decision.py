@@ -2,17 +2,17 @@
 
 from typing import Any, Dict, Tuple
 
-from .constants import (
-    CATEGORY_STRUCTURED,
-    CATEGORY_UNSTRUCTURED,
-    HIGH_CONFIDENCE,
-    LOW_CONFIDENCE,
-    MEDIUM_CONFIDENCE,
-    MIN_OFFICE_TEXT_LENGTH,
-    MIN_TEXT_LENGTH,
-    ReasonCode,
-)
-from .reason_codes import get_reason_description
+from .. import constants, reason_codes
+
+CATEGORY_STRUCTURED = constants.CATEGORY_STRUCTURED
+CATEGORY_UNSTRUCTURED = constants.CATEGORY_UNSTRUCTURED
+HIGH_CONFIDENCE = constants.HIGH_CONFIDENCE
+LOW_CONFIDENCE = constants.LOW_CONFIDENCE
+MEDIUM_CONFIDENCE = constants.MEDIUM_CONFIDENCE
+MIN_OFFICE_TEXT_LENGTH = constants.MIN_OFFICE_TEXT_LENGTH
+MIN_TEXT_LENGTH = constants.MIN_TEXT_LENGTH
+ReasonCode = constants.ReasonCode
+get_reason_description = reason_codes.get_reason_description
 
 
 def decide(signals: Dict[str, Any]) -> Tuple[bool, str, float, str, str]:

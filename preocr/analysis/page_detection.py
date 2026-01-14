@@ -2,11 +2,14 @@
 
 from typing import Any, Dict, List, Optional
 
-from .constants import MIN_TEXT_LENGTH, ReasonCode
-from .decision import decide
-from .reason_codes import get_reason_description
-from .filetype import FileTypeInfo
-from .signals import collect_signals
+from .. import constants, reason_codes
+from ..core.decision import decide
+from ..core.signals import collect_signals
+from ..utils.filetype import FileTypeInfo
+
+MIN_TEXT_LENGTH = constants.MIN_TEXT_LENGTH
+ReasonCode = constants.ReasonCode
+get_reason_description = reason_codes.get_reason_description
 
 
 def analyze_pdf_pages(

@@ -3,7 +3,7 @@
 import tempfile
 from pathlib import Path
 
-from preocr import text_probe
+from preocr.probes import text_probe
 
 
 def test_extract_plain_text():

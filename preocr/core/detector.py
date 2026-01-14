@@ -3,21 +3,28 @@
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Union
 
-from . import decision
-from . import filetype
-from . import image_probe
-from . import layout_analyzer
-from . import office_probe
-from . import opencv_layout
-from . import page_detection
-from . import pdf_probe
-from . import signals
-from . import text_probe
-from .cache import get_cached_result, cache_result
-from .constants import LAYOUT_REFINEMENT_THRESHOLD
-from .logger import get_logger
+from .. import constants
+from ..analysis import layout_analyzer, opencv_layout, page_detection
+from ..probes import image_probe, office_probe, pdf_probe, text_probe
+from ..utils import cache, filetype, logger
+from . import decision, signals
+
+LAYOUT_REFINEMENT_THRESHOLD = constants.LAYOUT_REFINEMENT_THRESHOLD
+get_logger = logger.get_logger
+get_cached_result = cache.get_cached_result
+cache_result = cache.cache_result
 
 logger = get_logger(__name__)
+
+# Import modules for easier access
+filetype_module = filetype
+pdf_probe_module = pdf_probe
+office_probe_module = office_probe
+text_probe_module = text_probe
+image_probe_module = image_probe
+layout_analyzer_module = layout_analyzer
+page_detection_module = page_detection
+opencv_layout_module = opencv_layout
 
 
 def needs_ocr(
@@ -93,7 +100,7 @@ def needs_ocr(
     # Step 1: Detect file type
     if progress_callback:
         progress_callback("detecting_file_type", 0.1)
-    file_info = filetype.detect_file_type(str(path))
+    file_info = filetype_module.detect_file_type(str(path))
     mime: str = file_info["mime"]
     extension: str = file_info["extension"]
 
@@ -107,28 +114,28 @@ def needs_ocr(
         # PDF text extraction (with optional page-level analysis)
         if progress_callback:
             progress_callback("extracting_pdf_text", 0.3)
-        text_result = pdf_probe.extract_pdf_text(str(path), page_level=page_level)
+        text_result = pdf_probe_module.extract_pdf_text(str(path), page_level=page_level)
 
         # Perform layout analysis if requested
         if layout_aware:
             if progress_callback:
                 progress_callback("analyzing_layout", 0.5)
-            layout_result = layout_analyzer.analyze_pdf_layout(str(path), page_level=page_level)
+            layout_result = layout_analyzer_module.analyze_pdf_layout(str(path), page_level=page_level)
 
         # Perform page-level analysis if requested
         if page_level and "pages" in text_result:
             if progress_callback:
                 progress_callback("analyzing_pages", 0.6)
-            page_analysis = page_detection.analyze_pdf_pages(str(path), file_info, text_result)
+            page_analysis = page_detection_module.analyze_pdf_pages(str(path), file_info, text_result)
     elif "officedocument" in mime or extension in ["docx", "pptx", "xlsx"]:
         # Office document text extraction
-        text_result = office_probe.extract_office_text(str(path), mime)
+        text_result = office_probe_module.extract_office_text(str(path), mime)
     elif mime.startswith("text/") or mime in ["text/html", "application/xhtml+xml"]:
         # Plain text or HTML extraction
-        text_result = text_probe.extract_text_from_file(str(path), mime)
+        text_result = text_probe_module.extract_text_from_file(str(path), mime)
     elif mime.startswith("image/"):
         # Image analysis (no text extraction)
-        image_result = image_probe.analyze_image(str(path))
+        image_result = image_probe_module.analyze_image(str(path))
 
     # Step 3: Collect all signals
     collected_signals = signals.collect_signals(
@@ -143,7 +150,7 @@ def needs_ocr(
     if mime == "application/pdf" and (layout_aware or confidence < LAYOUT_REFINEMENT_THRESHOLD):
         if progress_callback:
             progress_callback("opencv_analysis", 0.7)
-        opencv_result = opencv_layout.analyze_with_opencv(str(path), page_level=page_level)
+        opencv_result = opencv_layout_module.analyze_with_opencv(str(path), page_level=page_level)
         if opencv_result:
             # Refine decision based on OpenCV analysis
             needs_ocr_flag, reason, confidence, category, reason_code = decision.refine_with_opencv(

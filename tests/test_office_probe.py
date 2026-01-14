@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 
-from preocr import office_probe
+from preocr.probes import office_probe
 
 
 def test_extract_office_structure():

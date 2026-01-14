@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 
-from preocr import pdf_probe
+from preocr.probes import pdf_probe
 
 
 def test_extract_pdf_no_libraries():

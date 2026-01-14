@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 
-from preocr import layout_analyzer
+from preocr.analysis import layout_analyzer
 
 
 def test_analyze_pdf_layout_structure():

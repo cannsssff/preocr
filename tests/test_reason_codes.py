@@ -1,7 +1,8 @@
 """Tests for reason codes."""
 
-from preocr import reason_codes
-from preocr.constants import ReasonCode
+from preocr import constants, reason_codes
+
+ReasonCode = constants.ReasonCode
 
 
 def test_reason_code_descriptions():
@@ -24,7 +25,7 @@ def test_reason_code_in_result():
     import tempfile
     from pathlib import Path
 
-    from preocr import detector
+    from preocr.core import detector
 
     with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", delete=False) as f:
         f.write("Test content")

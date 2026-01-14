@@ -4,9 +4,12 @@ import io
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .constants import MIN_TEXT_LENGTH
-from .exceptions import PDFProcessingError, TextExtractionError
-from .logger import get_logger
+from .. import constants, exceptions
+from ..utils.logger import get_logger
+
+MIN_TEXT_LENGTH = constants.MIN_TEXT_LENGTH
+PDFProcessingError = exceptions.PDFProcessingError
+TextExtractionError = exceptions.TextExtractionError
 
 logger = get_logger(__name__)
 
