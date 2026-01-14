@@ -9,6 +9,7 @@ from ..probes import image_probe, office_probe, pdf_probe, text_probe
 from ..utils import cache, filetype, logger as logger_module
 from . import decision, signals
 
+Config = constants.Config
 LAYOUT_REFINEMENT_THRESHOLD = constants.LAYOUT_REFINEMENT_THRESHOLD
 get_logger = logger_module.get_logger
 get_cached_result = cache.get_cached_result
@@ -33,6 +34,7 @@ def needs_ocr(
     layout_aware: bool = False,
     use_cache: bool = False,
     progress_callback: Optional[Callable[[str, float], None]] = None,
+    config: Optional[Config] = None,
 ) -> Dict[str, Any]:
     """
     Determine if a file needs OCR processing.
@@ -48,6 +50,7 @@ def needs_ocr(
         use_cache: If True, cache results for faster repeated calls (default: False)
         progress_callback: Optional callback function(current_stage, progress) called
                           during processing. progress is 0.0-1.0.
+        config: Optional Config object with threshold settings. If None, uses default thresholds.
 
     Returns:
         Dictionary with keys:
@@ -143,11 +146,17 @@ def needs_ocr(
     )
 
     # Step 4: Make initial decision (heuristics)
-    needs_ocr_flag, reason, confidence, category, reason_code = decision.decide(collected_signals)
+    # Use config's layout_refinement_threshold if provided, otherwise use default
+    refinement_threshold = (
+        config.layout_refinement_threshold if config else LAYOUT_REFINEMENT_THRESHOLD
+    )
+    needs_ocr_flag, reason, confidence, category, reason_code = decision.decide(
+        collected_signals, config=config
+    )
 
     # Step 5: Confidence check → OpenCV layout refinement (if needed)
     # If confidence is low OR layout_aware is True, use OpenCV to refine the decision
-    if mime == "application/pdf" and (layout_aware or confidence < LAYOUT_REFINEMENT_THRESHOLD):
+    if mime == "application/pdf" and (layout_aware or confidence < refinement_threshold):
         if progress_callback:
             progress_callback("opencv_analysis", 0.7)
         opencv_result = opencv_layout_module.analyze_with_opencv(str(path), page_level=page_level)
@@ -161,6 +170,7 @@ def needs_ocr(
                 confidence,
                 category,
                 reason_code,
+                config=config,
             )
             # Add OpenCV results to signals for debugging
             collected_signals["opencv_layout"] = opencv_result

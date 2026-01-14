@@ -355,6 +355,66 @@ def process_document(file_path):
 | **Structured Data** | JSON, XML | 99% | No OCR needed |
 | **Unknown Binaries** | Conservative default | 50-60% | Assumes OCR needed |
 
+## ⚙️ Configuration
+
+PreOCR allows you to customize decision thresholds to fine-tune OCR detection for your specific use case.
+
+### Using Config Class
+
+```python
+from preocr import needs_ocr, Config
+
+# Create custom configuration
+config = Config(
+    min_text_length=75,              # Stricter: require 75 chars instead of 50
+    min_office_text_length=150,      # Stricter: require 150 chars for office docs
+    layout_refinement_threshold=0.85, # Lower threshold triggers OpenCV more often
+)
+
+# Use custom config
+result = needs_ocr("document.pdf", config=config)
+```
+
+### Batch Processing with Custom Thresholds
+
+```python
+from preocr import BatchProcessor
+
+# Option 1: Pass individual threshold parameters
+processor = BatchProcessor(
+    min_text_length=100,
+    min_office_text_length=200,
+    layout_refinement_threshold=0.80,
+)
+
+# Option 2: Use Config object
+from preocr import Config
+
+config = Config(
+    min_text_length=100,
+    min_office_text_length=200,
+)
+processor = BatchProcessor(config=config)
+
+# Process files with custom thresholds
+results = processor.process_directory("documents/")
+```
+
+### Available Thresholds
+
+- **`min_text_length`** (int, default: 50): Minimum text length to consider a file as having meaningful text. Files with less text will be flagged as needing OCR.
+- **`min_office_text_length`** (int, default: 100): Minimum text length for office documents to skip OCR.
+- **`layout_refinement_threshold`** (float, default: 0.9): Confidence threshold for triggering OpenCV layout analysis. Lower values trigger refinement more often.
+- **`high_confidence`** (float, default: 0.9): Threshold for high confidence decisions.
+- **`medium_confidence`** (float, default: 0.7): Threshold for medium confidence decisions.
+- **`low_confidence`** (float, default: 0.5): Threshold for low confidence decisions.
+
+### When to Customize Thresholds
+
+- **Stricter detection**: Increase `min_text_length` and `min_office_text_length` to reduce false negatives (fewer files incorrectly flagged as not needing OCR)
+- **More aggressive refinement**: Lower `layout_refinement_threshold` to use OpenCV analysis more frequently
+- **Domain-specific documents**: Adjust thresholds based on your document types (e.g., medical forms may need different thresholds than business letters)
+
 ## 🎯 Reason Codes
 
 PreOCR provides structured reason codes for programmatic handling:
@@ -583,7 +643,7 @@ preocr/
 
 ## 🔧 API Reference
 
-### `needs_ocr(file_path, page_level=False, layout_aware=False)`
+### `needs_ocr(file_path, page_level=False, layout_aware=False, config=None)`
 
 Main API function that determines if a file needs OCR.
 
@@ -591,6 +651,7 @@ Main API function that determines if a file needs OCR.
 - `file_path` (str or Path): Path to the file to analyze
 - `page_level` (bool): If `True`, return page-level analysis for PDFs (default: `False`)
 - `layout_aware` (bool): If `True`, perform explicit layout analysis for PDFs (default: `False`)
+- `config` (Config, optional): Configuration object with threshold settings (default: `None`, uses default thresholds)
 
 **Returns:**
 Dictionary with:
@@ -604,7 +665,7 @@ Dictionary with:
 - `pages` (list, optional): Page-level results
 - `layout` (dict, optional): Layout analysis results
 
-### `BatchProcessor(max_workers=None, use_cache=True, layout_aware=False, page_level=True, extensions=None, min_size=None, max_size=None, recursive=False, resume_from=None)`
+### `BatchProcessor(max_workers=None, use_cache=True, layout_aware=False, page_level=True, extensions=None, min_size=None, max_size=None, recursive=False, resume_from=None, min_text_length=None, min_office_text_length=None, layout_refinement_threshold=None, config=None)`
 
 Batch processor for efficiently processing multiple files with parallel processing, caching, and progress tracking.
 
@@ -618,6 +679,10 @@ Batch processor for efficiently processing multiple files with parallel processi
 - `max_size` (int, optional): Maximum file size in bytes (default: `None`)
 - `recursive` (bool): Scan subdirectories recursively (default: `False`)
 - `resume_from` (str, optional): Path to JSON file with previous results to resume from (default: `None`)
+- `min_text_length` (int, optional): Minimum text length threshold (default: `None`, uses default)
+- `min_office_text_length` (int, optional): Minimum office text length threshold (default: `None`, uses default)
+- `layout_refinement_threshold` (float, optional): Layout refinement threshold (default: `None`, uses default)
+- `config` (Config, optional): Configuration object with threshold settings (default: `None`, uses default thresholds)
 
 **Methods:**
 - `process_directory(directory, progress=True) -> BatchResults`: Process all files in a directory
@@ -819,7 +884,7 @@ A: PreOCR is conservative - it may flag some digital documents as needing OCR, b
 A: Yes! PreOCR is CPU-only and works completely offline. No internet connection required.
 
 **Q: Can I customize the decision thresholds?**  
-A: Currently, thresholds are optimized for general use. Customization options may be added in future versions.
+A: Yes! You can customize thresholds using the `Config` class or by passing threshold parameters to `BatchProcessor`. See the [Configuration](#-configuration) section for details.
 
 **Q: What file sizes can PreOCR handle?**  
 A: PreOCR can handle files of any size, but very large files (>100MB) may take longer. For batch processing, you can set `max_size` limits.

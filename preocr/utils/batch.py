@@ -6,9 +6,11 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
 
+from .. import constants
 from ..core.detector import needs_ocr
 from .logger import get_logger
 
+Config = constants.Config
 logger = get_logger(__name__)
 
 # Try to import tqdm for progress bars, but make it optional
@@ -42,6 +44,7 @@ def _process_single_file(
     use_cache: bool,
     layout_aware: bool,
     page_level: bool,
+    config: Optional[Config] = None,
 ) -> Dict[str, Any]:
     """
     Process a single file (used by ProcessPoolExecutor).
@@ -53,6 +56,7 @@ def _process_single_file(
         use_cache: Whether to use caching
         layout_aware: Whether to perform layout analysis
         page_level: Whether to perform page-level analysis
+        config: Optional Config object with threshold settings
 
     Returns:
         Result dictionary with file_path added
@@ -63,6 +67,7 @@ def _process_single_file(
             page_level=page_level,
             layout_aware=layout_aware,
             use_cache=use_cache,
+            config=config,
         )
         result["file_path"] = file_path
         result["error"] = None
@@ -169,7 +174,7 @@ class BatchResults:
             print(f"Files with errors: {stats['errors']}")
 
         if stats["processed"] > 0:
-            print(f"\nOCR Decision:")
+            print("\nOCR Decision:")
             print(
                 f"  Files needing OCR: {stats['needs_ocr']} ({stats['needs_ocr']/stats['processed']*100:.1f}%)"
             )
@@ -179,7 +184,7 @@ class BatchResults:
 
             # Page-level statistics
             if stats.get("total_pages", 0) > 0:
-                print(f"\nPage-Level Statistics:")
+                print("\nPage-Level Statistics:")
                 print(f"  Total pages processed: {stats['total_pages']}")
                 print(
                     f"  Pages needing OCR: {stats['total_pages_needing_ocr']} ({stats['total_pages_needing_ocr']/stats['total_pages']*100:.1f}%)"
@@ -190,7 +195,7 @@ class BatchResults:
                 print(f"  Files with pages: {stats['files_with_pages']}")
 
         if stats["processing_time"]:
-            print(f"\nPerformance:")
+            print("\nPerformance:")
             time_seconds = stats["processing_time"]
             if time_seconds < 60:
                 time_str = f"{time_seconds:.2f} seconds"
@@ -208,7 +213,7 @@ class BatchResults:
                 print(f"  Processing speed: {stats['files_per_second']:.2f} files/sec")
 
         if stats["by_type"]:
-            print(f"\nBreakdown by file type:")
+            print("\nBreakdown by file type:")
             for file_type, type_stats in sorted(stats["by_type"].items()):
                 pct = (
                     type_stats["needs_ocr"] / type_stats["total"] * 100
@@ -247,6 +252,14 @@ class BatchProcessor:
         max_size: Optional[int] = None,
         recursive: bool = False,
         resume_from: Optional[str] = None,
+        # Threshold customization parameters
+        min_text_length: Optional[int] = None,
+        min_office_text_length: Optional[int] = None,
+        layout_refinement_threshold: Optional[float] = None,
+        high_confidence: Optional[float] = None,
+        medium_confidence: Optional[float] = None,
+        low_confidence: Optional[float] = None,
+        config: Optional[Config] = None,
     ) -> None:
         """
         Initialize batch processor.
@@ -262,6 +275,14 @@ class BatchProcessor:
             max_size: Maximum file size in bytes (None = no limit)
             recursive: Scan subdirectories recursively
             resume_from: Path to JSON file with previous results to resume from
+            min_text_length: Minimum text length threshold (overrides config if provided)
+            min_office_text_length: Minimum office text length threshold (overrides config if provided)
+            layout_refinement_threshold: Layout refinement threshold (overrides config if provided)
+            high_confidence: High confidence threshold (overrides config if provided)
+            medium_confidence: Medium confidence threshold (overrides config if provided)
+            low_confidence: Low confidence threshold (overrides config if provided)
+            config: Optional Config object with threshold settings. If provided, individual
+                   threshold parameters override config values.
         """
         import multiprocessing
 
@@ -274,6 +295,26 @@ class BatchProcessor:
         self.max_size = max_size
         self.recursive = recursive
         self.resume_from = resume_from
+
+        # Handle config: use provided config or create from individual parameters
+        if config is None:
+            config = Config()
+        
+        # Override config values with individual parameters if provided
+        if min_text_length is not None:
+            config.min_text_length = min_text_length
+        if min_office_text_length is not None:
+            config.min_office_text_length = min_office_text_length
+        if layout_refinement_threshold is not None:
+            config.layout_refinement_threshold = layout_refinement_threshold
+        if high_confidence is not None:
+            config.high_confidence = high_confidence
+        if medium_confidence is not None:
+            config.medium_confidence = medium_confidence
+        if low_confidence is not None:
+            config.low_confidence = low_confidence
+        
+        self.config = config
 
         # Default extensions if not specified
         if self.extensions is None:
@@ -422,6 +463,7 @@ class BatchProcessor:
                 self.use_cache,
                 self.layout_aware,
                 self.page_level,
+                self.config,
             )
             for file_path in files
         ]
