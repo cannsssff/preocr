@@ -6,11 +6,11 @@ from typing import Any, Callable, Dict, Optional, Union
 from .. import constants
 from ..analysis import layout_analyzer, opencv_layout, page_detection
 from ..probes import image_probe, office_probe, pdf_probe, text_probe
-from ..utils import cache, filetype, logger
+from ..utils import cache, filetype, logger as logger_module
 from . import decision, signals
 
 LAYOUT_REFINEMENT_THRESHOLD = constants.LAYOUT_REFINEMENT_THRESHOLD
-get_logger = logger.get_logger
+get_logger = logger_module.get_logger
 get_cached_result = cache.get_cached_result
 cache_result = cache.cache_result
 
