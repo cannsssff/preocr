@@ -12,12 +12,16 @@ from .core import decision, detector, signals
 from .probes import image_probe, office_probe, pdf_probe, text_probe
 from .utils import batch, cache, filetype, logger
 
+# Export Config for easy access
+Config = constants.Config
+
 __all__ = [
     # Main API
     "needs_ocr",
     "__version__",
     "BatchProcessor",
     "BatchResults",
+    "Config",
     # Modules (for backward compatibility)
     "constants",
     "exceptions",
