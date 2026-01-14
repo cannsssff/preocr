@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 
-from preocr import filetype
+from preocr.utils import filetype
 
 
 def test_detect_pdf():

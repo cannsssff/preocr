@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from preocr import detector
+from preocr.core import detector
 
 
 def test_needs_ocr_text_file():

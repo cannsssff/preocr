@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from preocr import opencv_layout
+from preocr.analysis import opencv_layout
 
 
 def test_analyze_with_opencv_no_libraries():

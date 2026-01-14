@@ -3,7 +3,8 @@
 import tempfile
 from pathlib import Path
 
-from preocr import filetype, signals
+from preocr.core import signals
+from preocr.utils import filetype
 
 
 def test_collect_signals():

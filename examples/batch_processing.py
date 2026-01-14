@@ -3,7 +3,7 @@
 import sys
 from pathlib import Path
 
-from preocr.batch import BatchProcessor
+from preocr.utils.batch import BatchProcessor
 
 
 def main():

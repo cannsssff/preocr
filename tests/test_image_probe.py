@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 
-from preocr import image_probe
+from preocr.probes import image_probe
 
 
 def test_is_image_file():

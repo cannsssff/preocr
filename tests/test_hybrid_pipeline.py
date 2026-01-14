@@ -5,8 +5,10 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 
-from preocr import detector, decision
-from preocr.constants import LAYOUT_REFINEMENT_THRESHOLD
+from preocr import constants
+from preocr.core import decision, detector
+
+LAYOUT_REFINEMENT_THRESHOLD = constants.LAYOUT_REFINEMENT_THRESHOLD
 
 
 def test_high_confidence_skips_opencv():

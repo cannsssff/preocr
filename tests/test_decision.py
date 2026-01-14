@@ -1,6 +1,6 @@
 """Tests for decision engine."""
 
-from preocr import decision
+from preocr.core import decision
 
 
 def test_plain_text_no_ocr():

@@ -4,8 +4,11 @@ import tempfile
 from pathlib import Path
 
 
-from preocr import detector, page_detection
-from preocr.constants import ReasonCode
+from preocr import constants
+from preocr.analysis import page_detection
+from preocr.core import detector
+
+ReasonCode = constants.ReasonCode
 
 
 def test_page_detection_structure():
